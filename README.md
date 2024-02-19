@@ -7,3 +7,10 @@ Open source projects such as vorbis, vpx, etc. utilize several different build s
 Spending time trying to configure and compile each project is time consuming.
 
 The purpose of this project is to create a CMake script that will compile them and create a single static library and the necessary headers.
+
+# Building
+Go into the build directory. Create the cmake files using the CMakeLists.txt and make.
+```
+cd build
+cmake ..
+```

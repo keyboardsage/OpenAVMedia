@@ -13,46 +13,27 @@ CPMAddPackage(
 #  DOWNLOAD_ONLY True
 )
 
-# Copy ogg files/directories to their final build location under build/libs
-add_custom_target(make_libs_directory
+# Copy ogg files/directories to their final build location under build/libs/
+add_custom_target(copy_ogg_files
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs
-    DEPENDS ogg
-    COMMENT "Creating 'libs' directory..."
-)
-add_custom_target(make_libs_include_directory
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include
-    DEPENDS make_libs_directory
-    COMMENT "Creating 'libs/include' directory..."
-)
-
-add_custom_target(copy_ogg_directory
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_BINARY_DIR}/_deps/ogg-build/include/"
         "${CMAKE_BINARY_DIR}/libs/include/"
-    DEPENDS make_libs_include_directory
-    COMMENT "Copying ogg's config_types.h file..."
-)
-add_custom_target(copy_ogg_ogg_h_library
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/ogg-src/include/ogg/ogg.h"
         "${CMAKE_BINARY_DIR}/libs/include/ogg/"
-    DEPENDS copy_ogg_directory
-    COMMENT "Copying ogg's ogg.h file..."
-)
-add_custom_target(copy_ogg_os_types_h_library
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/ogg-src/include/ogg/os_types.h"
-        "${CMAKE_BINARY_DIR}/libs/include/ogg/"
-    DEPENDS copy_ogg_ogg_h_library
-    COMMENT "Copying ogg's os_types.h file..."
-)
-add_custom_target(copy_ogg_static_library
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/ogg-build/libogg.a"
         "${CMAKE_BINARY_DIR}/libs/"
-    DEPENDS copy_ogg_os_types_h_library
-    COMMENT "Copying ogg's static library file..."
+    DEPENDS ogg
+    COMMENT "Copying ogg files and directories..."
 )
-add_dependencies(OpenAVMedia copy_ogg_static_library)
+add_dependencies(OpenAVMedia copy_ogg_files)
 
 #target_link_libraries(OpenAVMedia PRIVATE ogg)
+
+add_custom_target(clean-libs
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/libs
+    COMMENT "Cleaning build artifacts..."
+)

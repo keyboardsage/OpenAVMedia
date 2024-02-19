@@ -8,7 +8,7 @@ add_executable(OpenAVMedia main.cpp)
 
 CPMAddPackage(
   NAME ogg
-  VERSION 1.3.4
+  VERSION 1.3.5
   GITHUB_REPOSITORY xiph/ogg
 #  DOWNLOAD_ONLY True
 )

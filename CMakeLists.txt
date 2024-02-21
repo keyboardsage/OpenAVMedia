@@ -20,6 +20,13 @@ CPMAddPackage(
 #  DOWNLOAD_ONLY True
 )
 
+CPMAddPackage(
+  NAME Opus
+  VERSION 1.4
+  GITHUB_REPOSITORY xiph/opus
+#  DOWNLOAD_ONLY True
+)
+
 # A target dedicated to cleaning up
 add_custom_target(clean-libs
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/libs
@@ -64,6 +71,20 @@ add_custom_target(copy_vorbis_files
     COMMENT "Copying vorbis files and directories..."
 )
 
+# Copy ogg files/directories to their final build location under build/libs/
+add_custom_target(copy_opus_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/opus/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/opus-src/include/"
+        "${CMAKE_BINARY_DIR}/libs/include/opus/"
+    COMMAND ${CMAKE_COMMAND} -E remove
+        "${CMAKE_BINARY_DIR}/libs/include/opus/meson.build"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/opus-build/libopus.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMENT "Copying opus files and directories..."
+)
+
 # Compile the libraries
 add_subdirectory("./tests")
-add_dependencies(OpenAVMedia copy_vorbis_files)
+add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files)

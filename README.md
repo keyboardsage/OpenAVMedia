@@ -10,6 +10,18 @@ Open source projects such as vorbis, vpx, etc. utilize several different build s
 
 The purpose of this project is to create a CMake script that will compile these audio/video projects. This way a programmer can simply include this singular project and get the necessary static libraries and headers.
 
+# Libraries
+## Included
+[ogg](https://github.com/xiph/ogg)
+[vorbis](https://github.com/xiph/vorbis)
+[opus](https://github.com/xiph/opus)
+
+## Maybe in Future
+[daala](https://github.com/xiph/daala)
+[flac](https://github.com/xiph/flac)
+[xspf](https://sourceforge.net/projects/libspiff/)
+[qoa](https://github.com/phoboslab/qoa)
+
 # Building
 Go into the build directory. Create the cmake files using the CMakeLists.txt and make.
 ```

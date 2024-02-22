@@ -2,19 +2,29 @@
 A subset of open source audio and video media types paired with a convenient build system. 
 
 # Motivation
-Open source projects such as vorbis, vpx, etc. utilize several different build systems; such as Makefile, Cmake, Premake, Bash files, Genie, Ninja, etc. The current issues a developer runs into include:
+Open source projects such as vorbis, vpx, etc. utilize several different build systems; such as Makefile, Cmake, Premake, Bash files, Genie, Ninja, etc. Developers run into issues such as:
 
-1. Configuring and compiling each project individually is time-consuming.
-2. You don't want your project's library version to rely solely on the OS you happen to use for compiling that day.
-3. Using a single implementation/compilation for a library allows for a more predictable runtime and root cause analysis.
+1. Configuring and compiling each project individually. (time-consuming)
+2. Library compilation relies on the underlying OS. (links against the wrong library version)
 
-The purpose of this project is to create a CMake script that will compile these audio/video projects. This way a programmer can simply include this singular project and get the necessary static libraries and headers.
+The purpose of this project is to create a CMake file that will compile all of the audio/video projects and produce a single static library. This saves a developer working on an audio/video application such as an audio player, video player, game engine, etc. from having to collect all of these libraries and configure them themselves.
 
-# Libraries
+# Why Static Library
+Different versions of the same shared object in theory will support a program equally. However, depending on the nature of the changes between them, its possible that the difference in version can break the program.
+
+It is good practice to test your program with different versions of the same dynamic library to ensure a program is functioning correctly, especially when upgrading to a new version. Alternatively, you can use versioning and dependency management tools to specify the exact version of the dynamic library that your program requires. Doing so helps prevent unexpected issues that can arise due to differences in version.
+
+So put simply, its a design decision to prevent versioning issues. 
+
+# Who Needs This
+
+# Libraries Included
 ## Included
 [ogg](https://github.com/xiph/ogg)
 [vorbis](https://github.com/xiph/vorbis)
 [opus](https://github.com/xiph/opus)
+[webm](https://github.com/webmproject/libwebm)
+[vpx](https://github.com/webmproject/libvpx)
 
 ## Maybe in Future
 [daala](https://github.com/xiph/daala)

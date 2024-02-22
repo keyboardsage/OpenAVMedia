@@ -49,14 +49,12 @@ CPMAddPackage(
 )
 ]]
 
-#[[
 CPMAddPackage(
-  NAME libwebm
+  NAME WEBM
   GITHUB_REPOSITORY webmproject/libwebm
   GIT_TAG libwebm-1.0.0.31
 #  DOWNLOAD_ONLY True
 )
-]]
 
 CPMAddPackage(
   NAME VPX
@@ -113,7 +111,7 @@ add_custom_target(copy_vorbis_files
     COMMENT "Copying vorbis files and directories..."
 )
 
-# Copy ogg files/directories to their final build location under build/libs/
+# Copy opus files/directories to their final build location under build/libs/
 add_custom_target(copy_opus_files
     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/opus/"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -127,6 +125,38 @@ add_custom_target(copy_opus_files
     COMMENT "Copying opus files and directories..."
 )
 
+# Copy webm files/directories to their final build location under build/libs/
+add_custom_target(copy_webm_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/common/"
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvmuxer/"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvparser/"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/webm-src/common/"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/common"
+
+    COMMAND ${CMAKE_COMMAND} -E remove
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/*.cc"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/*.cc"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/common/*.cc"
+    COMMAND ${CMAKE_COMMAND} -E remove
+        "${CMAKE_BINARY_DIR}/libs/include/webm/common/common.sh"
+    
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/webm-build/libwebm.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    DEPENDS setup_final_destination
+    COMMENT "Copying webm files and directories..."
+)
+
+# Copy vpx files/directories to their final build location under build/libs/
 add_custom_target(copy_vpx_files
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/vpx
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -141,4 +171,4 @@ add_custom_target(copy_vpx_files
 
 # Compile the libraries
 add_subdirectory("./tests")
-add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files copy_vpx_files)
+add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files copy_webm_files copy_vpx_files)

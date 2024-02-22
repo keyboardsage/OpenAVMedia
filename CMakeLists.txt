@@ -40,14 +40,14 @@ CPMAddPackage(
 #  DOWNLOAD_ONLY True
 )
 
-#[[
+set(SDL_STATIC ON CACHE BOOL "Build SDL as a static library" FORCE)
+set(SDL_SHARED OFF CACHE BOOL "Build SDL as a shared library" FORCE)
 CPMAddPackage(
-  NAME SDL
-  VERSION 2.30.0
+  NAME SDL2
   GITHUB_REPOSITORY libsdl-org/SDL
+  GIT_TAG release-2.30.0
 #  DOWNLOAD_ONLY True
 )
-]]
 
 CPMAddPackage(
   NAME WEBM
@@ -169,6 +169,24 @@ add_custom_target(copy_vpx_files
     COMMENT "Copying vpx files and directories..."
 )
 
+# Copy sdl2 files/directories to their final build location under build/libs/
+add_custom_target(copy_sdl2_files
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/include/"
+        "${CMAKE_BINARY_DIR}/libs/include"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/libSDL2.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/libSDL2main.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/libSDL2_test.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    DEPENDS setup_final_destination
+    COMMENT "Copying SDL2 files and directories..."
+)
+
 # Compile the libraries
 add_subdirectory("./tests")
-add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files copy_webm_files copy_vpx_files)
+add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files copy_webm_files copy_vpx_files copy_sdl2_files)

@@ -40,29 +40,81 @@ CPMAddPackage(
 #  DOWNLOAD_ONLY True
 )
 
-set(SDL_STATIC ON CACHE BOOL "Build SDL as a static library" FORCE)
-set(SDL_SHARED OFF CACHE BOOL "Build SDL as a shared library" FORCE)
+#set(SDL_STATIC ON CACHE BOOL "Build SDL as a static library" FORCE)
+#set(SDL_SHARED OFF CACHE BOOL "Build SDL as a shared library" FORCE)
 CPMAddPackage(
   NAME SDL2
   GITHUB_REPOSITORY libsdl-org/SDL
   GIT_TAG release-2.30.0
+  OPTIONS
+    "SDL_STATIC ON" "SDL_SHARED OFF"
 #  DOWNLOAD_ONLY True
 )
 
+# Compiles webm with the modifications
 CPMAddPackage(
   NAME WEBM
   GITHUB_REPOSITORY webmproject/libwebm
   GIT_TAG libwebm-1.0.0.31
-#  DOWNLOAD_ONLY True
+  DOWNLOAD_ONLY True
+)
+include(ExternalProject)
+if(NOT webm_SOURCE_DIR)
+  set(webm_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/webm-src")
+endif()
+ExternalProject_Add(webm_build
+    SOURCE_DIR ${webm_SOURCE_DIR}
+    BINARY_DIR ${webm_SOURCE_DIR}/build
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} ${webm_SOURCE_DIR}
+    BUILD_COMMAND ${CMAKE_COMMAND} --build .
+    INSTALL_COMMAND ""
+)
+ExternalProject_Add_Step(webm_build copy_CMakeLists_patch
+    COMMAND /bin/sh -c "./../patch/modify_mkvparser.sh '${CMAKE_BINARY_DIR}'"
+    COMMENT "Modifying Mkvparser header in webm..."
+    DEPENDEES download
+    DEPENDERS configure
+    ALWAYS TRUE
+)
+ExternalProject_Add_Step(webm_build copy_compiled_webm_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/common/"
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvmuxer/"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvparser/"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/webm-src/common/"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/common"
+
+    COMMAND ${CMAKE_COMMAND} -E remove
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/*.cc"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/*.cc"
+        "${CMAKE_BINARY_DIR}/libs/include/webm/common/*.cc"
+    COMMAND ${CMAKE_COMMAND} -E remove
+        "${CMAKE_BINARY_DIR}/libs/include/webm/common/common.sh"
+    
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/webm-src/build/libwebm.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMENT "Copying webm files and directories..."
+    DEPENDEES build
+    DEPENDERS install
+    ALWAYS TRUE
 )
 
+# Compiles VPX
 CPMAddPackage(
   NAME VPX
   GITHUB_REPOSITORY webmproject/libvpx
   GIT_TAG v1.14.0
   DOWNLOAD_ONLY True
 )
-
 include(ExternalProject)
 ExternalProject_Add(VPX_build
     SOURCE_DIR ${VPX_SOURCE_DIR}
@@ -70,6 +122,58 @@ ExternalProject_Add(VPX_build
     BUILD_COMMAND $(MAKE) -j
     INSTALL_COMMAND ""
     BUILD_IN_SOURCE 1
+    DEPENDS webm_build
+)
+#[[
+ExternalProject_Add_Step(webm_build copy_compiled_vpx_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/vpx
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/vpx-src/vpx/"
+        "${CMAKE_BINARY_DIR}/libs/include/vpx"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/vpx-src/libvpx.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    DEPENDS setup_final_destination
+    COMMENT "Copying vpx files and directories..."
+    DEPENDEES build
+    DEPENDERS install
+    ALWAYS TRUE
+)
+]]
+
+# Compiles libsimplewebm with the modifications
+CPMAddPackage(
+  NAME libsimplewebm
+  GITHUB_REPOSITORY zaps166/libsimplewebm
+  GIT_TAG master
+  GIT_SHALLOW TRUE
+  DOWNLOAD_ONLY True
+)
+ExternalProject_Add(libsimplewebm_build
+    SOURCE_DIR ${libsimplewebm_SOURCE_DIR}
+    BINARY_DIR ${libsimplewebm_SOURCE_DIR}/build
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} ${libsimplewebm_SOURCE_DIR}
+    BUILD_COMMAND ${CMAKE_COMMAND} --build .
+    INSTALL_COMMAND ""
+    DEPENDS webm_build
+    DEPENDS VPX_build
+)
+ExternalProject_Add_Step(libsimplewebm_build copy_CMakeLists_patch
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/../patch/CMakeLists.txt"
+        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/"
+    COMMENT "Copying over custom CMakeLists.txt..."
+    DEPENDEES download
+    DEPENDERS configure
+    ALWAYS TRUE
+)
+ExternalProject_Add_Step(libsimplewebm_build remove_outdated_libm_patch
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/"
+    COMMENT "Removing the outdated libwebm: ${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/..."
+    DEPENDEES download
+    DEPENDERS configure
+    ALWAYS TRUE
 )
 
 # Copy ogg files/directories to their final build location under build/libs/
@@ -101,12 +205,14 @@ add_custom_target(copy_vorbis_files
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbis.a"
         "${CMAKE_BINARY_DIR}/libs/"
+    #[[
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisenc.a"
         "${CMAKE_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisfile.a"
         "${CMAKE_BINARY_DIR}/libs/"
+    ]]
     DEPENDS copy_ogg_files
     COMMENT "Copying vorbis files and directories..."
 )
@@ -126,6 +232,7 @@ add_custom_target(copy_opus_files
 )
 
 # Copy webm files/directories to their final build location under build/libs/
+#[[
 add_custom_target(copy_webm_files
     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/"
@@ -152,9 +259,10 @@ add_custom_target(copy_webm_files
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/webm-build/libwebm.a"
         "${CMAKE_BINARY_DIR}/libs/"
-    DEPENDS setup_final_destination
+    DEPENDS webm_build
     COMMENT "Copying webm files and directories..."
 )
+]]
 
 # Copy vpx files/directories to their final build location under build/libs/
 add_custom_target(copy_vpx_files
@@ -168,6 +276,7 @@ add_custom_target(copy_vpx_files
     DEPENDS setup_final_destination
     COMMENT "Copying vpx files and directories..."
 )
+
 
 # Copy sdl2 files/directories to their final build location under build/libs/
 add_custom_target(copy_sdl2_files
@@ -189,4 +298,17 @@ add_custom_target(copy_sdl2_files
 
 # Compile the libraries
 add_subdirectory("./tests")
-add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files copy_webm_files copy_vpx_files copy_sdl2_files)
+
+add_dependencies(opus vorbis)                 # Build vorbis first, it depends upon Ogg, kicks off Ogg build
+add_dependencies(VPX_build opus)              # Build Opus next, Ogg should already be built
+#add_dependencies(SDL2::SDL2 VPX_build)
+#add_dependencies(copy_vorbis_files SDL2::SDL2)
+add_dependencies(copy_vorbis_files VPX_build) # Build VPX now, which will kick off WebM build
+
+add_dependencies(copy_opus_files copy_vorbis_files)
+#dd_dependencies(copy_webm_files copy_opus_files)
+add_dependencies(copy_vpx_files copy_opus_files)
+add_dependencies(libsimplewebm_build copy_vpx_files)  # After VPX, Vorbis, and Opus are ready/copied
+add_dependencies(copy_sdl2_files libsimplewebm_build) # The necessities to build libsimplewebm_build exist, build
+add_dependencies(OpenAVMedia copy_sdl2_files)
+#add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files libsimplewebm_build copy_vpx_files copy_sdl2_files)

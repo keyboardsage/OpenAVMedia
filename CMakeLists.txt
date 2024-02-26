@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
 project(OpenAVMedia VERSION 0.1.0 LANGUAGES CXX)
 
+include(ExternalProject) # Will be using this functionality to customize external projects throughout this script
+
 # A target dedicated to setting up directories
 add_custom_target(setup_final_destination
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs
@@ -25,7 +27,7 @@ CPMAddPackage(
 #  DOWNLOAD_ONLY True
 )
 
-set(Ogg_DIR {CMAKE_BINARY_DIR}/_deps/ogg-build CACHE PATH "Path to the Ogg library's CMake configuration")
+set(Ogg_DIR ${CMAKE_BINARY_DIR}/_deps/ogg-build CACHE PATH "Path to the Ogg library's CMake configuration")
 CPMAddPackage(
   NAME Vorbis
   VERSION 1.3.7
@@ -40,15 +42,42 @@ CPMAddPackage(
 #  DOWNLOAD_ONLY True
 )
 
-#set(SDL_STATIC ON CACHE BOOL "Build SDL as a static library" FORCE)
-#set(SDL_SHARED OFF CACHE BOOL "Build SDL as a shared library" FORCE)
+# Compiles SDL2
+set(sdl2_SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/sdl2-src/ CACHE PATH "Path to the SDL2 library's CMake configuration")
 CPMAddPackage(
   NAME SDL2
   GITHUB_REPOSITORY libsdl-org/SDL
   GIT_TAG release-2.30.0
-  OPTIONS
-    "SDL_STATIC ON" "SDL_SHARED OFF"
-#  DOWNLOAD_ONLY True
+#  OPTIONS
+#    "SDL_STATIC ON" "SDL_SHARED OFF"
+  DOWNLOAD_ONLY True
+)
+ExternalProject_Add(sdl2_build
+    SOURCE_DIR ${sdl2_SOURCE_DIR}
+    BINARY_DIR ${sdl2_SOURCE_DIR}/build
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -DSDL_STATIC=ON -DSDL_SHARED=OFF ${sdl2_SOURCE_DIR}
+    BUILD_COMMAND ${CMAKE_COMMAND} --build .
+    INSTALL_COMMAND ""
+)
+ExternalProject_Add_Step(sdl2_build copy_sdl2_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/SDL2"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/include/"
+        "${CMAKE_BINARY_DIR}/libs/include/SDL2"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/build/libSDL2.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/build/libSDL2main.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/build/libSDL2_test.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    DEPENDS setup_final_destination
+    COMMENT "Copying SDL2 files and directories..."
+    DEPENDEES build
+    DEPENDERS install
+    ALWAYS TRUE
 )
 
 # Compiles webm with the modifications
@@ -115,7 +144,6 @@ CPMAddPackage(
   GIT_TAG v1.14.0
   DOWNLOAD_ONLY True
 )
-include(ExternalProject)
 ExternalProject_Add(VPX_build
     SOURCE_DIR ${VPX_SOURCE_DIR}
     CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-examples --disable-tools --disable-docs
@@ -124,22 +152,6 @@ ExternalProject_Add(VPX_build
     BUILD_IN_SOURCE 1
     DEPENDS webm_build
 )
-#[[
-ExternalProject_Add_Step(webm_build copy_compiled_vpx_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/vpx
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/vpx-src/vpx/"
-        "${CMAKE_BINARY_DIR}/libs/include/vpx"
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/vpx-src/libvpx.a"
-        "${CMAKE_BINARY_DIR}/libs/"
-    DEPENDS setup_final_destination
-    COMMENT "Copying vpx files and directories..."
-    DEPENDEES build
-    DEPENDERS install
-    ALWAYS TRUE
-)
-]]
 
 # Compiles libsimplewebm with the modifications
 CPMAddPackage(
@@ -173,6 +185,42 @@ ExternalProject_Add_Step(libsimplewebm_build remove_outdated_libm_patch
     COMMENT "Removing the outdated libwebm: ${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/..."
     DEPENDEES download
     DEPENDERS configure
+    ALWAYS TRUE
+)
+
+# Compiles soloud
+CPMAddPackage(
+  NAME soloud
+  GITHUB_REPOSITORY jarikomppa/soloud
+  GIT_TAG RELEASE_20200207
+  DOWNLOAD_ONLY True
+)
+ExternalProject_Add(soloud_build
+    SOURCE_DIR ${soloud_SOURCE_DIR}/contrib
+    BINARY_DIR ${soloud_SOURCE_DIR}/contrib/build
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} ${soloud_SOURCE_DIR}/contrib
+    BUILD_COMMAND ${CMAKE_COMMAND} --build ${soloud_SOURCE_DIR}/contrib/build
+    INSTALL_COMMAND ""
+    DEPENDS sdl2_build
+)
+ExternalProject_Add_Step(soloud_build run_soloud_patch
+    COMMAND /bin/sh -c "./../patch/modify_soloud_cmake.sh '${CMAKE_BINARY_DIR}'"
+    COMMENT "Modifying SoLoud CMakeLists.txt to rely on the statically built SDL2 library..."
+    DEPENDEES download
+    DEPENDERS configure
+    ALWAYS TRUE
+)
+ExternalProject_Add_Step(soloud_build copy_compiled_soloud_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/soloud/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/soloud-src/include/"
+        "${CMAKE_BINARY_DIR}/libs/include/soloud"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/build/libsoloud.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMENT "Copying SoLoud files and directories..."
+    DEPENDEES build
+    DEPENDERS install
     ALWAYS TRUE
 )
 
@@ -231,39 +279,6 @@ add_custom_target(copy_opus_files
     COMMENT "Copying opus files and directories..."
 )
 
-# Copy webm files/directories to their final build location under build/libs/
-#[[
-add_custom_target(copy_webm_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/common/"
-
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvmuxer/"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvparser/"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/webm-src/common/"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/common"
-
-    COMMAND ${CMAKE_COMMAND} -E remove
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/*.cc"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/*.cc"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/common/*.cc"
-    COMMAND ${CMAKE_COMMAND} -E remove
-        "${CMAKE_BINARY_DIR}/libs/include/webm/common/common.sh"
-    
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/webm-build/libwebm.a"
-        "${CMAKE_BINARY_DIR}/libs/"
-    DEPENDS webm_build
-    COMMENT "Copying webm files and directories..."
-)
-]]
-
 # Copy vpx files/directories to their final build location under build/libs/
 add_custom_target(copy_vpx_files
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/vpx
@@ -277,38 +292,16 @@ add_custom_target(copy_vpx_files
     COMMENT "Copying vpx files and directories..."
 )
 
-
-# Copy sdl2 files/directories to their final build location under build/libs/
-add_custom_target(copy_sdl2_files
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/include/"
-        "${CMAKE_BINARY_DIR}/libs/include"
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/libSDL2.a"
-        "${CMAKE_BINARY_DIR}/libs/"
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/libSDL2main.a"
-        "${CMAKE_BINARY_DIR}/libs/"
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-build/libSDL2_test.a"
-        "${CMAKE_BINARY_DIR}/libs/"
-    DEPENDS setup_final_destination
-    COMMENT "Copying SDL2 files and directories..."
-)
-
 # Compile the libraries
 add_subdirectory("./tests")
 
 add_dependencies(opus vorbis)                 # Build vorbis first, it depends upon Ogg, kicks off Ogg build
 add_dependencies(VPX_build opus)              # Build Opus next, Ogg should already be built
-#add_dependencies(SDL2::SDL2 VPX_build)
-#add_dependencies(copy_vorbis_files SDL2::SDL2)
 add_dependencies(copy_vorbis_files VPX_build) # Build VPX now, which will kick off WebM build
 
 add_dependencies(copy_opus_files copy_vorbis_files)
-#dd_dependencies(copy_webm_files copy_opus_files)
 add_dependencies(copy_vpx_files copy_opus_files)
+
 add_dependencies(libsimplewebm_build copy_vpx_files)  # After VPX, Vorbis, and Opus are ready/copied
-add_dependencies(copy_sdl2_files libsimplewebm_build) # The necessities to build libsimplewebm_build exist, build
-add_dependencies(OpenAVMedia copy_sdl2_files)
-#add_dependencies(OpenAVMedia copy_vorbis_files copy_opus_files libsimplewebm_build copy_vpx_files copy_sdl2_files)
+add_dependencies(soloud_build libsimplewebm_build)    # The necessities to build libsimplewebm_build exist, build
+add_dependencies(OpenAVMedia soloud_build)            # Finally, build sloud, which triggers building SDL2

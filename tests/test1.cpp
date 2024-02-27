@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include "ogg/ogg.h"
@@ -39,6 +40,9 @@ int main() {
         << static_cast<int>(compiled.patch) << std::endl;
 
     SDL_Quit();
+
+    std::string simplewebm_version = "Unknown";
+    std::cout << "Linked libsimplewebm version:  " << simplewebm_version.c_str() << std::endl; // TODO: no straight-forward way to get this information
 
     return EXIT_SUCCESS;
 }

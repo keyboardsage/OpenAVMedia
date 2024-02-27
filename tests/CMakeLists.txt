@@ -31,3 +31,13 @@ target_link_libraries(test2 PRIVATE
     ${PTHREAD_LIB}
     ${CMAKE_DL_LIBS}
 )
+
+# third
+add_executable(test3 test3.cpp)
+target_include_directories(test3 PRIVATE ${CMAKE_BINARY_DIR}/libs/include)
+
+target_link_libraries(test3 PRIVATE
+    ${CMAKE_BINARY_DIR}/libs/libopenavmedia.a
+    ${PTHREAD_LIB}
+    ${CMAKE_DL_LIBS}
+)

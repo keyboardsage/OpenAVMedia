@@ -29,8 +29,8 @@ sleep 2
 cd ..
 rm -rf temp
 
-if [! -f "../libs/libopenavmedia.a" ]; then
+if [ ! -f libs/libopenavmedia.a ]; then
     echo "Error: libopenavmedia.a does not exist."
     exit 1
 fi
-echo -e "\033[1;33mlibopenavmedia.a was created successfully."
+echo -e "\033[1;33mlibopenavmedia.a was created successfully.\033[1;0m"

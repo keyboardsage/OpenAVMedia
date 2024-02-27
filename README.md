@@ -30,6 +30,7 @@ So put simply, its a design decision to prevent versioning issues.
 - [vpx](https://github.com/webmproject/libvpx)
 - [sdl2](https://github.com/libsdl-org/SDL)
 - [soloud](https://github.com/jarikomppa/soloud)
+- [libsimplewebm](https://github.com/zaps166/libsimplewebm)
 
 ## Maybe in Future
 - [daala](https://github.com/xiph/daala)

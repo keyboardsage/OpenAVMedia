@@ -21,10 +21,10 @@ add_custom_target(clean-libs
 include(cmake/CPM.cmake)
 
 CPMAddPackage(
-  NAME Ogg
-  VERSION 1.3.5
-  GITHUB_REPOSITORY xiph/ogg
-#  DOWNLOAD_ONLY True
+    NAME Ogg
+    GITHUB_REPOSITORY keyboardsage/ogg # Using a custom version of Ogg that has ogg_version_string()
+    GIT_TAG version_info
+    GIT_SHALLOW TRUE
 )
 
 set(Ogg_DIR ${CMAKE_BINARY_DIR}/_deps/ogg-build CACHE PATH "Path to the Ogg library's CMake configuration")
@@ -311,4 +311,4 @@ add_dependencies(copy_vpx_files copy_opus_files)
 add_dependencies(libsimplewebm_build copy_vpx_files)  # After VPX, Vorbis, and Opus are ready/copied
 add_dependencies(soloud_build libsimplewebm_build)    # The necessities to build libsimplewebm_build exist, build
 add_dependencies(combine_into_singular_static_lib soloud_build) # Build SoLoud, which triggers building SDL2
-add_dependencies(OpenAVMediaTests combine_into_singular_static_lib)  # Finally, create the singular lib by combining
+add_dependencies(test1 combine_into_singular_static_lib)  # Finally, create the singular lib by combining

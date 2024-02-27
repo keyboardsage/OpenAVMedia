@@ -187,6 +187,22 @@ ExternalProject_Add_Step(libsimplewebm_build remove_outdated_libm_patch
     DEPENDERS configure
     ALWAYS TRUE
 )
+ExternalProject_Add_Step(libsimplewebm_build copy_simplewebm_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/simplewebm
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/OpusVorbisDecoder.hpp"
+        "${CMAKE_BINARY_DIR}/libs/include/simplewebm/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/VPXDecoder.hpp"
+        "${CMAKE_BINARY_DIR}/libs/include/simplewebm/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/WebMDemuxer.hpp"
+        "${CMAKE_BINARY_DIR}/libs/include/simplewebm/"
+    COMMENT "Copying simplewebm files and directories..."
+    DEPENDEES build
+    DEPENDERS install
+    ALWAYS TRUE
+)
 
 # Compiles soloud
 CPMAddPackage(
@@ -313,3 +329,4 @@ add_dependencies(soloud_build libsimplewebm_build)    # The necessities to build
 add_dependencies(combine_into_singular_static_lib soloud_build) # Build SoLoud, which triggers building SDL2
 add_dependencies(test1 combine_into_singular_static_lib)  # Create the singular lib by combining
 add_dependencies(test2 test1)  # Lastly, finish making the tests
+add_dependencies(test3 test2)

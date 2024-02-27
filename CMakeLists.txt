@@ -292,6 +292,12 @@ add_custom_target(copy_vpx_files
     COMMENT "Copying vpx files and directories..."
 )
 
+# Combines the multiple libraries and places them into a singular libopenavmedia.a
+add_custom_target(combine_into_singular_static_lib
+    COMMAND /bin/sh -c "./../patch/combine_static_libs.sh"
+    COMMENT "Combining all the static libraries into libopenavmedia.a..."
+)
+
 # Compile the libraries
 add_subdirectory("./tests")
 
@@ -304,4 +310,5 @@ add_dependencies(copy_vpx_files copy_opus_files)
 
 add_dependencies(libsimplewebm_build copy_vpx_files)  # After VPX, Vorbis, and Opus are ready/copied
 add_dependencies(soloud_build libsimplewebm_build)    # The necessities to build libsimplewebm_build exist, build
-add_dependencies(OpenAVMedia soloud_build)            # Finally, build sloud, which triggers building SDL2
+add_dependencies(combine_into_singular_static_lib soloud_build) # Build SoLoud, which triggers building SDL2
+add_dependencies(OpenAVMediaTests combine_into_singular_static_lib)  # Finally, create the singular lib by combining

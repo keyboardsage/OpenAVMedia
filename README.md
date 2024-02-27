@@ -37,6 +37,11 @@ So put simply, its a design decision to prevent versioning issues.
 - [xspf](https://sourceforge.net/projects/libspiff/)
 - [qoa](https://github.com/phoboslab/qoa)
 
+# Current State
+- [X] Linux
+- [ ] Mac
+- [ ] Windows
+
 # Building
 Go into the build directory. Create the cmake files using the CMakeLists.txt and make.
 ```

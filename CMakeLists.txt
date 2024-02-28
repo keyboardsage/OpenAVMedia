@@ -269,14 +269,12 @@ add_custom_target(copy_vorbis_files
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbis.a"
         "${CMAKE_BINARY_DIR}/libs/"
-    #[[
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisenc.a"
         "${CMAKE_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisfile.a"
         "${CMAKE_BINARY_DIR}/libs/"
-    ]]
     DEPENDS copy_ogg_files
     COMMENT "Copying vorbis files and directories..."
 )

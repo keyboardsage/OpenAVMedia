@@ -1,6 +1,10 @@
 #include <cstdlib>
+#include <cmath>
+#include <cstring>
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <thread>
 
 #include "ogg/ogg.h"
 #include "vorbis/codec.h"
@@ -12,6 +16,84 @@
 #include "webm/mkvparser/mkvparser.h" // libsimplewebm use these three headers to playback video
 #include "simplewebm/OpusVorbisDecoder.hpp"
 #include "simplewebm/VPXDecoder.hpp"
+
+/**
+ * @brief A few SDL specific functions for handling graphics.
+ * @note These functions could have just as easily been done using GLFW and OpenGL, etc.
+ */
+namespace sdl {
+    Uint32 bootstrap_sdl_window(Uint32 width, Uint32 height, SDL_Window*& window, SDL_Renderer*& renderer, SDL_Texture*& texture) {
+        // init the video
+        if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+            std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
+            return 1;
+        }
+
+        // create a window
+        window = SDL_CreateWindow("OpenAVMedia Example", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, 0);
+        if (window == nullptr) {
+            std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
+            return 2;
+        }
+
+        // add a renderer to the window
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        if (renderer == nullptr) {
+            std::cerr << "Failed to create renderer: " << SDL_GetError() << std::endl;
+            SDL_DestroyWindow(window);
+            return 3;
+        }
+
+        // add texture to renderer
+        // Note: This texture expects YUV data
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height);
+        if (texture == nullptr) {
+            std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
+            SDL_DestroyRenderer(renderer);
+            SDL_DestroyWindow(window);
+            return 4;
+        }
+
+        return 0;
+    }
+
+    Uint32 shutdown_sdl_window(SDL_Window*& window, SDL_Renderer*& renderer, SDL_Texture*& texture) {
+        SDL_DestroyTexture(texture);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+
+        return 0;
+    }
+
+    float get_sdl_time_delta(Uint32* last, Uint32* now) {
+        *last = *now;
+        *now = SDL_GetTicks();
+
+        return (float)(*now - *last); // time elapsed since previous function call and this one
+    }
+
+    bool handle_sdl_events(SDL_Event* e) {
+        // Return true when...
+        switch ((*e).type) { // ...the window is closed (clicked X)
+            case SDL_QUIT:
+                return true;
+                break;
+            case SDL_KEYDOWN: // ...or espace key is pressed
+                if ((*e).key.keysym.sym == SDLK_ESCAPE) return true;
+                break;
+        }
+
+        return false; // ...otherwise false
+    }
+
+    void copy_sdl_texture_to_sdl_renderer(SDL_Renderer*& renderer, SDL_Texture*& texture) {
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+        SDL_RenderPresent(renderer);
+    }
+}
+
 
 /**
  * @brief Matroska parser class derived from WebM library
@@ -48,7 +130,8 @@ class MkvReader: public mkvparser::IMkvReader {
         if (total)
 			*total = total_pos;
 		if (available)
-			*available = total_pos - curr_pos;
+			//*available = total_pos - curr_pos; // TODO: this seems logical but it causes the video playback to fail
+            *available = total_pos;
 
 		return 0;
 	}
@@ -56,82 +139,6 @@ class MkvReader: public mkvparser::IMkvReader {
     private:
 	FILE *m_file;
 };
-
-/**
- * @brief A few SDL specific functions for handling graphics.
- * @note These functions could have just as easily been done using GLFW and OpenGL, etc.
- */
-namespace sdl {
-    Uint32 bootstrap_sdl_window(Uint32 width, Uint32 height, SDL_Window* window, SDL_Renderer* renderer,SDL_Texture* texture) {
-        // init the video
-        if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-            std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
-            return 1;
-        }
-
-        // create a window
-        window = SDL_CreateWindow("OpenAVMedia Example", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, 0);
-        if (window == nullptr) {
-            std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
-            return 2;
-        }
-
-        // add a renderer to the window
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-        if (renderer == nullptr) {
-            std::cerr << "Failed to create renderer: " << SDL_GetError() << std::endl;
-            SDL_DestroyWindow(window);
-            return 3;
-        }
-
-        // add texture to renderer
-        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, width, height);
-        if (texture == nullptr) {
-            std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
-            SDL_DestroyRenderer(renderer);
-            SDL_DestroyWindow(window);
-            return 4;
-        }
-
-        return 0;
-    }
-
-    Uint32 shutdown_sdl_window(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture) {
-        SDL_DestroyTexture(texture);
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-
-        return 0;
-    }
-
-    float get_sdl_time_delta(Uint32* last, Uint32* now) {
-        *last = *now;
-        *now = SDL_GetTicks();
-
-        return (float)(*now - *last); // time elapsed since previous function call and this one
-    }
-
-    bool handle_sdl_events(SDL_Event* e) {
-        // Return true when...
-        switch ((*e).type) { // ...the window is closed (clicked X)
-            case SDL_QUIT:
-                return true;
-                break;
-            case SDL_KEYDOWN: // ...or espace key is pressed
-                if ((*e).key.keysym.sym == SDLK_ESCAPE) return true;
-                break;
-        }
-
-        return false; // ...otherwise false
-    }
-
-    void copy_sdl_texture_to_sdl_renderer(SDL_Renderer* renderer, SDL_Texture* texture) {
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
-    }
-}
 
 int32_t update_frames_per_second(float time_delta) {
     static float time_delta_accumulator = 0.0f; // Uses two internal variables...
@@ -154,13 +161,125 @@ int32_t update_frames_per_second(float time_delta) {
     return -1; // A negative 1 is returned until ready to provide a frame count update
 }
 
-int main(int argc, char* argv[]) {
-    if (argc != 2) return EXIT_FAILURE;
 
-    // get video information needed to setup the window
-    int video_width = 640;
-    int video_height = 360;
-    int pitch; // this is the length of one row of pixels, in bytes
+uint32_t webm_frame_rate(const char* filePath, double& rate) {
+    // parse the EBML header
+    MkvReader reader(filePath);
+    mkvparser::EBMLHeader ebmlHeader;
+    long long pos = 0;
+    if (ebmlHeader.Parse(&reader, pos) < 0) {
+        std::cerr << "Error parsing EBML header." << std::endl;
+        return 1;
+    }
+
+    // create a segment
+    mkvparser::Segment* segment = nullptr;
+    if (mkvparser::Segment::CreateInstance(&reader, pos, segment) < 0) {
+        std::cerr << "Error creating segment instance." << std::endl;
+        return 2;
+    }
+    if (segment->Load() < 0) {
+        std::cerr << "Error loading segment." << std::endl;
+        return 3;
+    }
+
+    // for each...
+    const mkvparser::Tracks* tracks = segment->GetTracks();
+    for (unsigned long i = 0; i < tracks->GetTracksCount(); ++i) {
+        // ...track...
+        const mkvparser::Track* track = tracks->GetTrackByIndex(i);
+        if (track == nullptr) continue;
+
+        // ...if its a VP8 or VP9 video track...
+        if (track->GetType() == mkvparser::Track::kVideo) {
+            const mkvparser::VideoTrack* videoTrack = static_cast<const mkvparser::VideoTrack*>(track);
+
+            if (strcmp(videoTrack->GetCodecId(), "V_VP8") == 0 || strcmp(videoTrack->GetCodecId(), "V_VP9") == 0) {
+                // ...get the track's...
+                if (videoTrack->GetDefaultDuration() > 0) {
+                    // ...duration by calculating it based on WebM's default duration...
+                    double frameRate = 1000000000.0 / videoTrack->GetDefaultDuration();
+                    
+                    delete segment;
+                    
+                    rate = frameRate;
+                    return 0; // success
+                } else {
+                    // ...but if the default duration is not present you will need to find another way
+                    // ex: Estimate the frame rate by analyzing frame timestamps
+                    std::cerr << "Warning: You may need to find another way to determine frame rate. No default duration present in the current video." << std::endl;
+                }
+            }
+        }
+    }
+
+    delete segment;
+
+    std::cerr << "Error: Suitable track/frame rate was not found." << std::endl;
+    return 4;
+}
+
+class FrameRegulator {
+    public:
+    FrameRegulator(int target_fps) {
+        targetFPS(target_fps);
+        const int MILLISECONDS_IN_A_SECOND = 1000;
+
+        m_targetFrameDuration = std::round(MILLISECONDS_IN_A_SECOND / target_fps);
+    }
+    ~FrameRegulator() { };
+
+    void start() {
+        //m_frameStart = SDL_GetTicks();
+        m_frameStart = std::chrono::steady_clock::now();
+    }
+    void stop() {
+        //m_frameTime = SDL_GetTicks() - m_frameStart;
+        m_frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_frameStart).count();
+    }
+    void delay() {
+        if (m_frameTime < m_targetFrameDuration) {
+            //DEBUG: std::cout << "Waiting..." << (m_targetFrameDuration - m_frameTime) << " milliseconds" << std::endl;
+            //SDL_Delay(m_targetFrameDuration - m_frameTime); // delay to achieve the target frame rate
+            std::this_thread::sleep_for(std::chrono::milliseconds(m_targetFrameDuration - m_frameTime));
+        } else {
+            std::cerr << "Warning: Running a little slow. No waiting was required this frame/iteration." << std::endl;
+        }
+    }
+
+    void targetFPS(int target_fps) {
+        m_targetFPS = target_fps;
+    }
+
+    private:
+    std::chrono::_V2::steady_clock::time_point m_frameStart;       // start time of the frame
+    std::chrono::milliseconds::rep m_frameTime;        // elapsed time between the start() and stop(), the frame processing time
+    int m_targetFPS;           // target number of frames-per-second
+    uint64_t m_targetFrameDuration; // duration in milliseconds
+};
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Requires a single argument that contains the video file's file path." << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // get video information needed to setup the and play the video
+    WebMDemuxer demuxer(new MkvReader(argv[1]));
+    if (demuxer.isOpen()) {
+    } else {
+        std::cerr << "Failed to create WebMDemuxer: Unable to open " << argv[1] << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    int video_width = demuxer.getWidth();
+    int video_height = demuxer.getHeight();
+
+    double frame_rate = 0.0;
+    if (webm_frame_rate(argv[1], frame_rate) != 0) return EXIT_FAILURE;
+
+    // status message
+    std::cout << "Play File:    " << argv[1] << "\nVideo Length: " << demuxer.getLength() << "\nFrame Rate: " << frame_rate << std::endl;
 
     // get a SDL window open
     SDL_Window* window;
@@ -172,19 +291,31 @@ int main(int argc, char* argv[]) {
     }
 
     // creating variables prior to the loop, so they aren't created repeatedly per iteration
-    bool end_loop = false;
+    bool is_user_quiting = false;        // controls when to quit running the app
 
-	Uint32 last = 0;
+	Uint32 last = 0;                     // these 3 track the amount of time that elapses between iterations
     Uint32 now = SDL_GetTicks();
     float delta = 0.0f;
 
-    int32_t frame_count = 0;
+    int32_t frame_count = 0;                   // stores frame count over last second
+    FrameRegulator frameRegulator(frame_rate); // ensures a target frame count is reached
 
-    SDL_Event e;
+    SDL_Event e;                         // SDL's structure for tracking input
 
-	while (!end_loop) {
-        SDL_PollEvent(&e); // get latest events
-        end_loop = sdl::handle_sdl_events(&e); // process them
+    VPXDecoder videoDec(demuxer, 8);     // Interfaces for video codecs
+    OpusVorbisDecoder audioDec(demuxer);
+
+    WebMFrame videoFrame, audioFrame;    // Two frame types and two types for manipulating the data within them
+    VPXDecoder::Image image;
+    short* pcm = audioDec.isOpen() ? new short[audioDec.getBufferSamples() * demuxer.getChannels()] : nullptr;
+
+    // loop for playing the video
+	while ((!is_user_quiting) && demuxer.readFrame(&videoFrame, &audioFrame)) {
+        frameRegulator.start(); // consider this the start of the frame
+
+        // get latest input events
+        SDL_PollEvent(&e);
+        is_user_quiting = sdl::handle_sdl_events(&e); // process them
 
         // delta is the time that has elapsed since last update_frame_rate() call
         delta = sdl::get_sdl_time_delta(&last, &now);
@@ -196,21 +327,56 @@ int main(int argc, char* argv[]) {
         // update the playback position
 
         // get the next video frame based on playback position and put its pixels into a texture
-        /*auto frame = clip->getNextFrame();
-		if (frame != nullptr) {
-			void *pixels;
+        if (videoDec.isOpen() && videoFrame.isValid()) {
+            if (!videoDec.decode(videoFrame))
+            {
+                std::cerr << "Failed to decode video frame. Shutting down..." << std::endl;
+                sdl::shutdown_sdl_window(window, renderer, texture);
+                return EXIT_FAILURE;
+            }
+            while (videoDec.getImage(image) == VPXDecoder::NO_ERROR)
+            {
+                // For each color plane...
+                for (int p = 0; p < 3; ++p) {
+                    // ...determine the dimensions
+                    // Note: This can be necessary because for some formats, e.g., YUV, the format contains planes with differing dimensions.
+                    const int w = image.getWidth(p);
+                    const int h = image.getHeight(p);
 
-			SDL_LockTexture(texture, nullptr, &pixels, &pitch);
-			memcpy(pixels, frame->getBuffer(), sizeof(Uint8) * pitch * frame->getHeight());
-			SDL_UnlockTexture(texture);
+                    // ...then copy each row of the current plane from the decoder's color plane to the Image's color plane
+                    int offset = 0;
+                    for (int y = 0; y < h; ++y) {
+                        offset += image.linesize[p];
+                    }
+                }
 
-			clip->popFrame();
-		}*/
+                // copy the Image data to the SDL texture by...
+                // ...updating the texture with YUV frame data
+                if (SDL_UpdateYUVTexture(texture, NULL,
+                                    image.planes[0], image.linesize[0],     // Y plane
+                                    image.planes[1], image.linesize[1],     // U (Cb) plane
+                                    image.planes[2], image.linesize[2]) == -1) {  // V (Cr) plane
+                    std::cerr << "Unable to update the texture with YUV data: " << SDL_GetError() << std::endl;
+                    sdl::shutdown_sdl_window(window, renderer, texture);
+                    return EXIT_FAILURE;
+                }
+
+                // ...and then rendering this texture, SDL will handle the YUV to RGB conversion internally
+                if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
+                    std::cerr << "Unable to update render target with the latest texture: " << SDL_GetError() << std::endl;
+                    sdl::shutdown_sdl_window(window, renderer, texture);
+                    return EXIT_FAILURE;
+                }
+            }
+        }
 
         // render the texture
         sdl::copy_sdl_texture_to_sdl_renderer(renderer, texture);
 
-        SDL_Delay(20); // maximum of 50 frames-per-second. A small delay prevents excessive CPU utilization.
+        frameRegulator.stop(); // consider this the end of the frame
+
+        frameRegulator.delay(); //  A small delay prevents excessive CPU utilization and ensure proper playback speed.
+        //SDL_Delay(18); // maximum of 50 frames-per-second. A small delay prevents excessive CPU utilization.
     }
 
     // clean up

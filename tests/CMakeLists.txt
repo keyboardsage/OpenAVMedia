@@ -10,7 +10,10 @@ if(UNIX)
     set(PTHREAD_LIB "pthread")
 endif()
 target_link_libraries(test1 PRIVATE
+    ${CMAKE_BINARY_DIR}/libs/libsimplewebm.a
     ${CMAKE_BINARY_DIR}/libs/libvorbis.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbisenc.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbisfile.a
     ${CMAKE_BINARY_DIR}/libs/libopus.a
     ${CMAKE_BINARY_DIR}/libs/libogg.a
     ${CMAKE_BINARY_DIR}/libs/libvpx.a
@@ -36,8 +39,25 @@ target_link_libraries(test2 PRIVATE
 add_executable(test3 test3.cpp)
 target_include_directories(test3 PRIVATE ${CMAKE_BINARY_DIR}/libs/include)
 
+#[[
 target_link_libraries(test3 PRIVATE
     ${CMAKE_BINARY_DIR}/libs/libopenavmedia.a
+    ${PTHREAD_LIB}
+    ${CMAKE_DL_LIBS}
+)
+]]
+target_link_libraries(test3 PRIVATE
+    ${CMAKE_BINARY_DIR}/libs/libsimplewebm.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbis.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbisenc.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbisfile.a
+    ${CMAKE_BINARY_DIR}/libs/libopus.a
+    ${CMAKE_BINARY_DIR}/libs/libogg.a
+    ${CMAKE_BINARY_DIR}/libs/libvpx.a
+    ${CMAKE_BINARY_DIR}/libs/libwebm.a
+    ${CMAKE_BINARY_DIR}/libs/libsoloud.a
+    ${CMAKE_BINARY_DIR}/libs/libSDL2.a
+    ${CMAKE_BINARY_DIR}/libs/libSDL2main.a
     ${PTHREAD_LIB}
     ${CMAKE_DL_LIBS}
 )

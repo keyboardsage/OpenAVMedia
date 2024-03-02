@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
 project(OpenAVMedia VERSION 0.1.0 LANGUAGES CXX)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 include(ExternalProject) # Will be using this functionality to customize external projects throughout this script
 
 # A target dedicated to setting up directories
@@ -179,7 +181,7 @@ ExternalProject_Add_Step(libsimplewebm_build copy_CMakeLists_patch
     DEPENDERS configure
     ALWAYS TRUE
 )
-ExternalProject_Add_Step(libsimplewebm_build remove_outdated_libm_patch
+ExternalProject_Add_Step(libsimplewebm_build remove_outdated_libwebm_patch
     COMMAND ${CMAKE_COMMAND} -E remove_directory
         "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/"
     COMMENT "Removing the outdated libwebm: ${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/..."
@@ -189,6 +191,9 @@ ExternalProject_Add_Step(libsimplewebm_build remove_outdated_libm_patch
 )
 ExternalProject_Add_Step(libsimplewebm_build copy_simplewebm_files
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/simplewebm
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/build/libsimplewebm.a"
+        "${CMAKE_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/OpusVorbisDecoder.hpp"
         "${CMAKE_BINARY_DIR}/libs/include/simplewebm/"
@@ -259,6 +264,10 @@ add_custom_target(copy_ogg_files
 
 # Copy vorbis files/directories to their final build location under build/libs/
 add_custom_target(copy_vorbis_files
+    # Make sure that vorbisenc and vorbisfile are made also
+    COMMAND make -C "${CMAKE_BINARY_DIR}/_deps/vorbis-build"
+
+    # Now copy the files
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_BINARY_DIR}/_deps/vorbis-src/include/"
         "${CMAKE_BINARY_DIR}/libs/include/"
@@ -276,7 +285,7 @@ add_custom_target(copy_vorbis_files
         "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisfile.a"
         "${CMAKE_BINARY_DIR}/libs/"
     DEPENDS copy_ogg_files
-    COMMENT "Copying vorbis files and directories..."
+    COMMENT "Building libvorbisenc.a and libvorbisfile.a then copying vorbis files and directories..."
 )
 
 # Copy opus files/directories to their final build location under build/libs/

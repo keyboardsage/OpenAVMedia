@@ -18,7 +18,7 @@
 #include "simplewebm/VPXDecoder.hpp"
 
 /**
- * @brief A few SDL specific functions for handling graphics.
+ * @brief A few SDL specific functions that are custom made for handling graphics.
  * @note These functions could have just as easily been done using GLFW and OpenGL, etc.
  */
 namespace sdl {
@@ -66,13 +66,6 @@ namespace sdl {
         return 0;
     }
 
-    float get_sdl_time_delta(Uint32* last, Uint32* now) {
-        *last = *now;
-        *now = SDL_GetTicks();
-
-        return (float)(*now - *last); // time elapsed since previous function call and this one
-    }
-
     bool handle_sdl_events(SDL_Event* e) {
         // Return true when...
         switch ((*e).type) { // ...the window is closed (clicked X)
@@ -94,6 +87,11 @@ namespace sdl {
     }
 }
 
+/**
+ * --------------------------------------------------------------------------------
+ * Below are custom functions that asssist in playback.
+ * --------------------------------------------------------------------------------
+ */
 
 /**
  * @brief Matroska parser class derived from WebM library
@@ -139,6 +137,13 @@ class MkvReader: public mkvparser::IMkvReader {
     private:
 	FILE *m_file;
 };
+
+float get_time_delta(int64_t* last, int64_t* now) {
+    *last = *now;
+    *now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    return (float)(*now - *last); // time elapsed since previous function call and this one
+}
 
 int32_t update_frames_per_second(float time_delta) {
     static float time_delta_accumulator = 0.0f; // Uses two internal variables...
@@ -219,28 +224,26 @@ uint32_t webm_frame_rate(const char* filePath, double& rate) {
     return 4;
 }
 
+const int MILLISECONDS_IN_A_SECOND = 1000;
+
 class FrameRegulator {
     public:
     FrameRegulator(int target_fps) {
         targetFPS(target_fps);
-        const int MILLISECONDS_IN_A_SECOND = 1000;
 
         m_targetFrameDuration = std::round(MILLISECONDS_IN_A_SECOND / target_fps);
     }
     ~FrameRegulator() { };
 
     void start() {
-        //m_frameStart = SDL_GetTicks();
         m_frameStart = std::chrono::steady_clock::now();
     }
     void stop() {
-        //m_frameTime = SDL_GetTicks() - m_frameStart;
         m_frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_frameStart).count();
     }
     void delay() {
+        //DEBUG: std::cout << "Waiting..." << (m_targetFrameDuration - m_frameTime) << " ms because " << m_frameTime << " ms have passed" << std::endl;
         if (m_frameTime < m_targetFrameDuration) {
-            //DEBUG: std::cout << "Waiting..." << (m_targetFrameDuration - m_frameTime) << " milliseconds" << std::endl;
-            //SDL_Delay(m_targetFrameDuration - m_frameTime); // delay to achieve the target frame rate
             std::this_thread::sleep_for(std::chrono::milliseconds(m_targetFrameDuration - m_frameTime));
         } else {
             std::cerr << "Warning: Running a little slow. No waiting was required this frame/iteration." << std::endl;
@@ -252,9 +255,9 @@ class FrameRegulator {
     }
 
     private:
-    std::chrono::_V2::steady_clock::time_point m_frameStart;       // start time of the frame
-    std::chrono::milliseconds::rep m_frameTime;        // elapsed time between the start() and stop(), the frame processing time
-    int m_targetFPS;           // target number of frames-per-second
+    std::chrono::_V2::steady_clock::time_point m_frameStart; // start time of the frame
+    std::chrono::milliseconds::rep m_frameTime;              // elapsed time between the start() and stop(), the frame processing time
+    int m_targetFPS;                // target number of frames-per-second
     uint64_t m_targetFrameDuration; // duration in milliseconds
 };
 
@@ -291,14 +294,15 @@ int main(int argc, char* argv[]) {
     }
 
     // creating variables prior to the loop, so they aren't created repeatedly per iteration
-    bool is_user_quiting = false;        // controls when to quit running the app
+    bool is_user_quitting = false;        // controls when to quit running the app
 
-	Uint32 last = 0;                     // these 3 track the amount of time that elapses between iterations
-    Uint32 now = SDL_GetTicks();
+	int64_t last = 0;                     // these 3 track the amount of time that elapses between iterations
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     float delta = 0.0f;
+    float accumulated_delta = 0.0f;
 
     int32_t frame_count = 0;                   // stores frame count over last second
-    FrameRegulator frameRegulator(frame_rate); // ensures a target frame count is reached
+    FrameRegulator frameRegulator(frame_rate); // utilized to reach the playback frame rate goal
 
     SDL_Event e;                         // SDL's structure for tracking input
 
@@ -310,21 +314,22 @@ int main(int argc, char* argv[]) {
     short* pcm = audioDec.isOpen() ? new short[audioDec.getBufferSamples() * demuxer.getChannels()] : nullptr;
 
     // loop for playing the video
-	while ((!is_user_quiting) && demuxer.readFrame(&videoFrame, &audioFrame)) {
+	while ((!is_user_quitting) && demuxer.readFrame(&videoFrame, &audioFrame)) {
         frameRegulator.start(); // consider this the start of the frame
 
         // get latest input events
         SDL_PollEvent(&e);
-        is_user_quiting = sdl::handle_sdl_events(&e); // process them
+        is_user_quitting = sdl::handle_sdl_events(&e); // process them
 
         // delta is the time that has elapsed since last update_frame_rate() call
-        delta = sdl::get_sdl_time_delta(&last, &now);
-
-        // update the frames that were played over the last second
-        frame_count = update_frames_per_second(delta);
-        if (frame_count != -1) std::cout << "Frames Per Second: " << frame_count << std::endl;
+        delta = get_time_delta(&last, &now);
 
         // update the playback position
+        accumulated_delta += delta;
+        
+        // update the frame count
+        frame_count = update_frames_per_second(delta);
+        if (frame_count != -1) std::cout << "Frames Per Second: " << frame_count << std::endl;
 
         // get the next video frame based on playback position and put its pixels into a texture
         if (videoDec.isOpen() && videoFrame.isValid()) {
@@ -353,8 +358,8 @@ int main(int argc, char* argv[]) {
                 // copy the Image data to the SDL texture by...
                 // ...updating the texture with YUV frame data
                 if (SDL_UpdateYUVTexture(texture, NULL,
-                                    image.planes[0], image.linesize[0],     // Y plane
-                                    image.planes[1], image.linesize[1],     // U (Cb) plane
+                                    image.planes[0], image.linesize[0],           // Y plane
+                                    image.planes[1], image.linesize[1],           // U (Cb) plane
                                     image.planes[2], image.linesize[2]) == -1) {  // V (Cr) plane
                     std::cerr << "Unable to update the texture with YUV data: " << SDL_GetError() << std::endl;
                     sdl::shutdown_sdl_window(window, renderer, texture);
@@ -368,15 +373,22 @@ int main(int argc, char* argv[]) {
                     return EXIT_FAILURE;
                 }
             }
+            
+            //DEBUG: std::cout << "videoFrame: " << videoFrame.time << " progress: " << (accumulated_delta/MILLISECONDS_IN_A_SECOND) << std::endl;
         }
 
         // render the texture
         sdl::copy_sdl_texture_to_sdl_renderer(renderer, texture);
 
-        frameRegulator.stop(); // consider this the end of the frame
+        frameRegulator.stop();  // consider this the end of the frame
 
-        frameRegulator.delay(); //  A small delay prevents excessive CPU utilization and ensure proper playback speed.
-        //SDL_Delay(18); // maximum of 50 frames-per-second. A small delay prevents excessive CPU utilization.
+        // pace the video by performing...
+        if (videoFrame.time < (accumulated_delta/MILLISECONDS_IN_A_SECOND)) {
+            // ...no operation (nop) anytime the video is running behind
+        } else {
+            // ...or adding delays to ensure its playback speed matches the goal frame rate when running ahead
+            frameRegulator.delay();
+        }
     }
 
     // clean up

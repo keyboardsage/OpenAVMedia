@@ -12,6 +12,7 @@
 #include "SDL2/SDL.h"
 #include "vpx/vpx_codec.h"
 #include "soloud/soloud.h"
+#include "soloud/soloud_wav.h"
 
 #include "webm/mkvparser/mkvparser.h" // libsimplewebm use these three headers to playback video
 #include "simplewebm/OpusVorbisDecoder.hpp"
@@ -293,6 +294,11 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // get SoLoud initialized
+    SoLoud::Soloud soloud;
+    soloud.init();
+    SoLoud::handle soundHandle;
+
     // creating variables prior to the loop, so they aren't created repeatedly per iteration
     bool is_user_quitting = false;        // controls when to quit running the app
 
@@ -306,12 +312,13 @@ int main(int argc, char* argv[]) {
 
     SDL_Event e;                         // SDL's structure for tracking input
 
-    VPXDecoder videoDec(demuxer, 8);     // Interfaces for video codecs
+    VPXDecoder videoDec(demuxer, 8);     // interfaces for video codecs
     OpusVorbisDecoder audioDec(demuxer);
 
-    WebMFrame videoFrame, audioFrame;    // Two frame types and two types for manipulating the data within them
+    WebMFrame videoFrame, audioFrame;    // two frame types and two buffers for manipulating the data within them
     VPXDecoder::Image image;
     short* pcm = audioDec.isOpen() ? new short[audioDec.getBufferSamples() * demuxer.getChannels()] : nullptr;
+    SoLoud::Wav audioSample;             // buffer for playing back decoded audio samples
 
     // loop for playing the video
 	while ((!is_user_quitting) && demuxer.readFrame(&videoFrame, &audioFrame)) {
@@ -336,6 +343,7 @@ int main(int argc, char* argv[]) {
             if (!videoDec.decode(videoFrame))
             {
                 std::cerr << "Failed to decode video frame. Shutting down..." << std::endl;
+                soloud.deinit();
                 sdl::shutdown_sdl_window(window, renderer, texture);
                 return EXIT_FAILURE;
             }
@@ -362,6 +370,7 @@ int main(int argc, char* argv[]) {
                                     image.planes[1], image.linesize[1],           // U (Cb) plane
                                     image.planes[2], image.linesize[2]) == -1) {  // V (Cr) plane
                     std::cerr << "Unable to update the texture with YUV data: " << SDL_GetError() << std::endl;
+                    soloud.deinit();
                     sdl::shutdown_sdl_window(window, renderer, texture);
                     return EXIT_FAILURE;
                 }
@@ -369,12 +378,43 @@ int main(int argc, char* argv[]) {
                 // ...and then rendering this texture, SDL will handle the YUV to RGB conversion internally
                 if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
                     std::cerr << "Unable to update render target with the latest texture: " << SDL_GetError() << std::endl;
+                    soloud.deinit();
                     sdl::shutdown_sdl_window(window, renderer, texture);
                     return EXIT_FAILURE;
                 }
             }
             
             //DEBUG: std::cout << "videoFrame: " << videoFrame.time << " progress: " << (accumulated_delta/MILLISECONDS_IN_A_SECOND) << std::endl;
+        }
+
+        // get the next video frame based on playback position and put its pixels into a texture
+        if (audioDec.isOpen() && audioFrame.isValid())
+        {
+            int numOutSamples;
+            if (!audioDec.getPCMS16(audioFrame, pcm, numOutSamples))
+            {
+                std::cerr << "Failed to decode audio frame. Shutting down..." << std::endl;
+                soloud.deinit();
+                sdl::shutdown_sdl_window(window, renderer, texture);
+                return EXIT_FAILURE;
+            }
+            
+            /* DEBUG: for (size_t i = 0; i < numOutSamples; ++i) std::cout << pcm[i] << " ";
+            std::cout << std::endl;
+            std::cout.flush();
+            if (numOutSamples > 0) exit(0);*/
+
+            //std::cout << (audioDec.getBufferSamples() * demuxer.getChannels()) << " " << numOutSamples << " " << demuxer.getSampleRate() << " " << demuxer.getChannels() << std::endl;
+            audioSample.loadRawWave16(pcm, audioDec.getBufferSamples() * demuxer.getChannels(), demuxer.getSampleRate(), demuxer.getChannels());
+            
+            if (!soloud.isValidVoiceHandle(soundHandle) || !soloud.getVoiceCount()) { // prevent any potential repeated playback
+                // Semi playing, it has many artifacts
+                // soloud.setVolume(soundHandle, 32.0f);
+                //soloud.setRelativePlaySpeed(soundHandle, 0.0f);
+                //audioSample.setVolume(4.0f);
+                soundHandle = soloud.play(audioSample, 4.0f, 0.0f, true);
+                soloud.setPause(soundHandle, false);
+            }
         }
 
         // render the texture
@@ -392,6 +432,8 @@ int main(int argc, char* argv[]) {
     }
 
     // clean up
+    delete[] pcm;
+    soloud.deinit();
     sdl::shutdown_sdl_window(window, renderer, texture);
 
     return EXIT_SUCCESS;

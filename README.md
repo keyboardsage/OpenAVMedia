@@ -4,15 +4,15 @@ A subset of open source audio and video media libraries paired with a convenient
 # Motivation
 Open source projects such as vorbis, vpx, etc. utilize several different build systems; such as Makefile, Cmake, Premake, Bash files, Genie, Ninja, etc. Developers run into issues such as:
 
-1. Configuring and compiling each project individually. (time-consuming)
-2. Library compilation relies on the underlying OS. (links against the wrong library version)
+1. Configuring and compiling each project individually. (this is time-consuming)
+2. Library compilation relies on the underlying OS.     (links against the wrong library version)
 
-The purpose of this project is to create a CMake file that will compile all of the audio/video projects and produce a single directory filled with the needed static libraries and headers.
+The purpose of this project is to create a CMake file that will compile all of the audio/video projects and produce a single directory filled with the necessary static libraries and headers.
 
 # Who Needs This
 This saves a developer working on an audio/video application such as an audio player, video player, game engine, etc. from having to collect all of these libraries and configure them themselves.
 
-Personally, I use this project in a CMakeLists.txt that uses CPM to conveniently get this one project
+Personally, I use this project in a CMakeLists.txt that uses CPM to conveniently fetch this one project.
 
 # Why Static Library
 Different versions of the same shared object in theory will support a program equally. However, depending on the nature of the changes between them, its possible that the difference between versions can break the program.
@@ -39,9 +39,15 @@ So put simply, its a design decision to prevent versioning issues.
 - [qoa](https://github.com/phoboslab/qoa)
 
 # Current State
-- [X] Linux
-- [ ] Mac
-- [ ] Windows
+- Supported Platforms:
+  - [X] Linux
+  - [ ] Mac
+  - [ ] Windows
+- Additionally, `test3` in the `tests` directory demonstrates how to utilize the libraries to make a simple WEBM video player.
+  - It currently plays VP8/Vorbis([download page](https://commons.wikimedia.org/wiki/File:Big_Buck_Bunny_4K.webm))
+  - It currently plays VP9/Opus([download page](https://commons.wikimedia.org/wiki/File:Charge_-_Blender_Open_Movie-full_movie.webm))
+  - It **does not** support stereo (such as [this video](https://commons.wikimedia.org/wiki/File:WING_IT!_-_Blender_Open_Movie-full_movie.webm)), etc. Only mono is supported in the `test3` example. 
+- The project builds all the libraries separately and then attempts to combine them into a singular libopenavmedia.a. The combined static library still needs to be confirmed to work reliably.
 
 # Building
 Go into the build directory. Create the cmake files using the CMakeLists.txt and make.

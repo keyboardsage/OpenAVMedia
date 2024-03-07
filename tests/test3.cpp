@@ -5,6 +5,7 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <deque>
 
 #include "ogg/ogg.h"
 #include "vorbis/codec.h"
@@ -17,6 +18,8 @@
 #include "webm/mkvparser/mkvparser.h" // libsimplewebm use these three headers to playback video
 #include "simplewebm/OpusVorbisDecoder.hpp"
 #include "simplewebm/VPXDecoder.hpp"
+
+#include "../tests/test3.hpp"
 
 /**
  * @brief A few SDL specific functions that are custom made for handling graphics.
@@ -294,11 +297,6 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // get SoLoud initialized
-    SoLoud::Soloud soloud;
-    soloud.init();
-    SoLoud::handle soundHandle;
-
     // creating variables prior to the loop, so they aren't created repeatedly per iteration
     bool is_user_quitting = false;        // controls when to quit running the app
 
@@ -314,6 +312,12 @@ int main(int argc, char* argv[]) {
 
     VPXDecoder videoDec(demuxer, 8);     // interfaces for video codecs
     OpusVorbisDecoder audioDec(demuxer);
+
+    CustomAudioSource customSource;      // get SoLoud initialized
+    customSource.mChannels = demuxer.getChannels();
+    SoLoud::Soloud soloud;
+    soloud.init();
+    SoLoud::handle soundHandle;
 
     WebMFrame videoFrame, audioFrame;    // two frame types and two buffers for manipulating the data within them
     VPXDecoder::Image image;
@@ -399,21 +403,28 @@ int main(int argc, char* argv[]) {
                 return EXIT_FAILURE;
             }
             
-            /* DEBUG: for (size_t i = 0; i < numOutSamples; ++i) std::cout << pcm[i] << " ";
+            /* DEBUG: Printing the samples out to compare their decoded values
+            for (size_t i = 0; i < numOutSamples; ++i) std::cout << pcm[i] << " ";
             std::cout << std::endl;
             std::cout.flush();
-            if (numOutSamples > 0) exit(0);*/
+            if (numOutSamples > 0) exit(0);
+            */
 
-            //std::cout << (audioDec.getBufferSamples() * demuxer.getChannels()) << " " << numOutSamples << " " << demuxer.getSampleRate() << " " << demuxer.getChannels() << std::endl;
-            audioSample.loadRawWave16(pcm, audioDec.getBufferSamples() * demuxer.getChannels(), demuxer.getSampleRate(), demuxer.getChannels());
+            //DEBUG: std::cout << (audioDec.getBufferSamples() * demuxer.getChannels()) << " " << numOutSamples << " " << demuxer.getSampleRate() << " " << demuxer.getChannels() << std::endl;
+            
+            /* DEBUG: Printing the raw audio out to a file to check/hear it in Audacity software
+            FILE* descriptor = fopen("./theraw", "ab");
+            fwrite(pcm, 1, numOutSamples * demuxer.getChannels() * sizeof(short), descriptor);
+            fclose(descriptor);
+            */
+           
+            // Push the decoded samples into the buffer.
+            for (int i = 0; i < numOutSamples; i++) {
+                customSource.audioBuffer.push_back(pcm[i]);
+            }
             
             if (!soloud.isValidVoiceHandle(soundHandle) || !soloud.getVoiceCount()) { // prevent any potential repeated playback
-                // Semi playing, it has many artifacts
-                // soloud.setVolume(soundHandle, 32.0f);
-                //soloud.setRelativePlaySpeed(soundHandle, 0.0f);
-                //audioSample.setVolume(4.0f);
-                soundHandle = soloud.play(audioSample, 4.0f, 0.0f, true);
-                soloud.setPause(soundHandle, false);
+                soundHandle = soloud.play(customSource, 2.0f);
             }
         }
 

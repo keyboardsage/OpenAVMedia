@@ -337,3 +337,4 @@ add_dependencies(combine_into_singular_static_lib soloud_build) # Build SoLoud, 
 add_dependencies(test1 combine_into_singular_static_lib)  # Create the singular lib by combining
 add_dependencies(test2 test1)  # Lastly, finish making the tests
 add_dependencies(test3 test2)
+add_dependencies(test4 test3)

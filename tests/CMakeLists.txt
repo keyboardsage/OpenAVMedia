@@ -56,7 +56,7 @@ target_link_libraries(test3 PRIVATE
 )
 
 # fourth
-add_executable(test4 test4.cpp)
+add_executable(test4 test3.cpp)
 target_include_directories(test4 PRIVATE ${CMAKE_BINARY_DIR}/../tests/ ${CMAKE_BINARY_DIR}/libs/include)
 
 target_link_libraries(test4 PRIVATE

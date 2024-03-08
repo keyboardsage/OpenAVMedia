@@ -49,7 +49,9 @@ Supported Platforms:
   - It plays VP9/Opus([download page](https://commons.wikimedia.org/wiki/File:Charge_-_Blender_Open_Movie-full_movie.webm))
   - It plays mono encoded audio. It **does not** play stereo (such as [this video](https://commons.wikimedia.org/wiki/File:WING_IT!_-_Blender_Open_Movie-full_movie.webm)), or other multi-channel audio.
 
+<p align="center">
 ![Test3 running](test3_running.gif "Test3")
+</p>
 
 # Building
 Go into the build directory. Create the cmake files using the CMakeLists.txt and make.

@@ -50,7 +50,7 @@ Supported Platforms:
   - It plays mono encoded audio. It **does not** play stereo (such as [this video](https://commons.wikimedia.org/wiki/File:WING_IT!_-_Blender_Open_Movie-full_movie.webm)), or other multi-channel audio.
 
 <p align="center">
-![Test3 running](test3_running.gif "Test3")
+<img src="test3_running.gif" alt="Test3 running">
 </p>
 
 # Building

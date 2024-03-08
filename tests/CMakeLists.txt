@@ -39,13 +39,6 @@ target_link_libraries(test2 PRIVATE
 add_executable(test3 test3.cpp)
 target_include_directories(test3 PRIVATE ${CMAKE_BINARY_DIR}/../tests/ ${CMAKE_BINARY_DIR}/libs/include)
 
-#[[
-target_link_libraries(test3 PRIVATE
-    ${CMAKE_BINARY_DIR}/libs/libopenavmedia.a
-    ${PTHREAD_LIB}
-    ${CMAKE_DL_LIBS}
-)
-]]
 target_link_libraries(test3 PRIVATE
     ${CMAKE_BINARY_DIR}/libs/libsimplewebm.a
     ${CMAKE_BINARY_DIR}/libs/libvorbis.a
@@ -58,6 +51,16 @@ target_link_libraries(test3 PRIVATE
     ${CMAKE_BINARY_DIR}/libs/libsoloud.a
     ${CMAKE_BINARY_DIR}/libs/libSDL2.a
     ${CMAKE_BINARY_DIR}/libs/libSDL2main.a
+    ${PTHREAD_LIB}
+    ${CMAKE_DL_LIBS}
+)
+
+# fourth
+add_executable(test4 test4.cpp)
+target_include_directories(test4 PRIVATE ${CMAKE_BINARY_DIR}/../tests/ ${CMAKE_BINARY_DIR}/libs/include)
+
+target_link_libraries(test4 PRIVATE
+    ${CMAKE_BINARY_DIR}/libs/libopenavmedia.a
     ${PTHREAD_LIB}
     ${CMAKE_DL_LIBS}
 )

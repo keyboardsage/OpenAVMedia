@@ -71,6 +71,7 @@ unsigned int CustomAudioSourceInstance::getAudio(float* aBuffer, unsigned int aS
                 short sampleRight = mParentSource->audioBuffer.front();
                 mParentSource->audioBuffer.pop_front();
                 
+                // normalize the samples to the range of -1.0 to 1.0
                 aBuffer[2 * i] = sampleLeft / 32768.0f; // left channel
                 aBuffer[2 * i + 1] = sampleRight / 32768.0f; // right channel
             } else {

@@ -39,15 +39,17 @@ So put simply, its a design decision to prevent versioning issues.
 - [qoa](https://github.com/phoboslab/qoa)
 
 # Current State
-- Supported Platforms:
+Supported Platforms:
   - [X] Linux
   - [ ] Mac
   - [ ] Windows
-- Additionally, `test3` in the `tests` directory demonstrates how to utilize the libraries to make a simple WEBM video player.
-  - It currently plays VP8/Vorbis([download page](https://commons.wikimedia.org/wiki/File:Big_Buck_Bunny_4K.webm))
-  - It currently plays VP9/Opus([download page](https://commons.wikimedia.org/wiki/File:Charge_-_Blender_Open_Movie-full_movie.webm))
-  - It **does not** support stereo (such as [this video](https://commons.wikimedia.org/wiki/File:WING_IT!_-_Blender_Open_Movie-full_movie.webm)), etc. Only mono is supported in the `test3` example. 
-- The project builds all the libraries separately and then attempts to combine them into a singular libopenavmedia.a. The combined static library still needs to be confirmed to work reliably.
+
+`tests/test3` and `tests/test4` demonstrate how to utilize the libraries to make a simple WEBM video player.
+  - It plays VP8/Vorbis([download page](https://commons.wikimedia.org/wiki/File:Big_Buck_Bunny_4K.webm))
+  - It plays VP9/Opus([download page](https://commons.wikimedia.org/wiki/File:Charge_-_Blender_Open_Movie-full_movie.webm))
+  - It plays mono encoded audio. It **does not** play stereo (such as [this video](https://commons.wikimedia.org/wiki/File:WING_IT!_-_Blender_Open_Movie-full_movie.webm)), or other multi-channel audio.
+
+![Test3 running](test3_running.gif "Test3")
 
 # Building
 Go into the build directory. Create the cmake files using the CMakeLists.txt and make.

@@ -315,6 +315,7 @@ int main(int argc, char* argv[]) {
 
     CustomAudioSource customSource;      // get SoLoud initialized
     customSource.mChannels = demuxer.getChannels();
+    customSource.mBaseSamplerate = demuxer.getSampleRate();
     SoLoud::Soloud soloud;
     soloud.init();
     SoLoud::handle soundHandle;

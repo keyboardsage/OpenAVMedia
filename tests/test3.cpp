@@ -404,6 +404,8 @@ int main(int argc, char* argv[]) {
                 return EXIT_FAILURE;
             }
             
+            // DEBUG: std::cout << "numOutSamples: " << numOutSamples << " delta: " << delta << std::endl;
+            
             /* DEBUG: Printing the samples out to compare their decoded values
             for (size_t i = 0; i < numOutSamples; ++i) std::cout << pcm[i] << " ";
             std::cout << std::endl;

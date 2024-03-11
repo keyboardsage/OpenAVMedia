@@ -484,7 +484,6 @@ int main(int argc, char* argv[]) {
     // clean up
     delete[] pcm;
     sdl::shutdown_sdl_audio(audioDevice);
-    sdl::shutdown_sdl_audio(audioDevice);
     sdl::shutdown_sdl_window(window, renderer, texture);
 
     return EXIT_SUCCESS;

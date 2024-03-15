@@ -77,8 +77,7 @@ unsigned int CustomAudioSourceInstance::getAudio(float* aBuffer, unsigned int aS
                 aBuffer[i]     = (sampleLeft / 32768.0f)*0.95;            // left channel
                 aBuffer[i + aBufferSize] = (sampleRight / 32768.0f)*0.95; // right channel
             } else {
-                //DEBUG: 
-                std::cout << "Lack of Data - aSamplesToRead: " << aSamplesToRead << " - aBufferSize:" << aBufferSize << std::endl;
+                // DEBUG: std::cout << "Lack of Data - aSamplesToRead: " << aSamplesToRead << " - aBufferSize:" << aBufferSize << std::endl;
                 aBuffer[i] = aBuffer[i + aBufferSize] = 0.0f; // when there is not enough data for stereo, output silence
             }
         }
@@ -94,7 +93,6 @@ unsigned int CustomAudioSourceInstance::getAudio(float* aBuffer, unsigned int aS
 
     return samplesWritten;
 }
-
 bool CustomAudioSourceInstance::hasEnded()
 {
     // stream ends when there are no more samples left to play

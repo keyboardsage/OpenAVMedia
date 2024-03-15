@@ -1,12 +1,10 @@
 #include <cstdlib>
-#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <string>
 #include <chrono>
 #include <thread>
 #include <deque>
-#include <fstream>
 
 #include "ogg/ogg.h"
 #include "vorbis/codec.h"
@@ -21,8 +19,6 @@
 #include "simplewebm/VPXDecoder.hpp"
 
 #include "../tests/test5.hpp"
-#define DR_WAV_IMPLEMENTATION
-#include "../tests/dr_wav.h"
 
 /**
  * @brief This namespace contains a few SDL specific functions that are custom made for handling graphics.
@@ -352,55 +348,10 @@ int main(int argc, char* argv[]) {
     VPXDecoder::Image image;
     short* pcm = audioDec.isOpen() ? new short[audioDec.getBufferSamples() * demuxer.getChannels()] : nullptr;
 
-    // all initialization is done, now we must decode the audio from the webm file
-    /*
-    WebMDemuxer demuxer2(new MkvReader(argv[1]));
-    OpusVorbisDecoder preAudioDec(demuxer2);
-
-    while (demuxer2.readFrame(NULL, &audioFrame)) {
-        if (preAudioDec.isOpen() && audioFrame.isValid()) {
-            // suck up all the audio data
-            int numOutSamples;
-            if (!preAudioDec.getPCMS16(audioFrame, pcm, numOutSamples)) {
-                std::cerr << "Failed to decode audio frame." << std::endl;
-                SDL_Quit();
-                return EXIT_FAILURE;
-            }
-
-            // and put it in the audioBuffer vector
-            for (int i = 0; i < (numOutSamples * demuxer2.getChannels()); i++) {
-                customSource.audioBuffer.push_back(pcm[i]);
-            }
-        }
-    }
-    */
-
-    unsigned int channels;
-    unsigned int sampleRate;
-    drwav_uint64 totalSampleCount;
-    short* blah = drwav_open_file_and_read_pcm_frames_s16("output_audio.wav", 
-        &channels, &sampleRate, &totalSampleCount, nullptr);
-    for (int i = 0; i < (totalSampleCount*2); i++) {
-        customSource.audioBuffer.push_back(blah[i]);
-    }
-
     // status
     std::cout << "Audio deque/buffer size: " << customSource.audioBuffer.size()
         << "\nSoloud Global Samplerate: " << soloud.mSamplerate
         << "\nSoloud Global Buffer Size: " << soloud.mBufferSize << std::endl;
-    
-    /*
-    std::ofstream outFile("output_audio.raw", std::ios::binary);
-    if (outFile.is_open()) {
-        for (short sample : customSource.audioBuffer) {
-            outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
-        }
-        outFile.close();
-        std::cout << "Output audio saved." << std::endl;
-    } else {
-        std::cerr << "Failed to open output_audio.raw for writing." << std::endl;
-    }
-    */
 
     // loop for playing the video
 	while ((!is_user_quitting) && demuxer.readFrame(&videoFrame, &audioFrame)) {
@@ -470,7 +421,7 @@ int main(int argc, char* argv[]) {
         }
 
         // get the next video frame based on playback position and put its pixels into a texture
-        /*if (audioDec.isOpen() && audioFrame.isValid())
+        if (audioDec.isOpen() && audioFrame.isValid())
         {
             int numOutSamples;
             if (!audioDec.getPCMS16(audioFrame, pcm, numOutSamples))
@@ -479,24 +430,25 @@ int main(int argc, char* argv[]) {
                 soloud.deinit();
                 sdl::shutdown_sdl_window(window, renderer, texture);
                 return EXIT_FAILURE;
-            }*/
+            }
 
-            /* DEBUG: Printing the raw audio out to a file to check/hear it in Audacity software
+            /*
+            // DEBUG: Printing the raw audio out to a file to check/hear it in Audacity software
             FILE* descriptor = fopen("./theraw", "ab");
             fwrite(pcm, 1, numOutSamples * demuxer.getChannels() * sizeof(short), descriptor);
             fclose(descriptor);
             */
            
             // Push the decoded samples into the buffer.
-            /*for (int i = 0; i < (numOutSamples * demuxer.getChannels()); i++) {
+            for (int i = 0; i < (numOutSamples * demuxer.getChannels()); i++) {
                 customSource.audioBuffer.push_back(pcm[i]);
-            }*/
+            }
             
             // ensure playback can't repeat and play
             if (!soloud.isValidVoiceHandle(soundHandle) || !soloud.getVoiceCount()) {
                 soundHandle = soloud.play(customSource);
             }
-        //}
+        }
 
         // render the texture
         sdl::copy_sdl_texture_to_sdl_renderer(renderer, texture);

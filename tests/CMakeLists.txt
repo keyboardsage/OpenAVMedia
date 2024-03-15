@@ -37,9 +37,39 @@ target_link_libraries(test2 PRIVATE
 
 # third
 add_executable(test3 test3.cpp)
-target_include_directories(test3 PRIVATE ${CMAKE_BINARY_DIR}/../tests/ ${CMAKE_BINARY_DIR}/libs/include)
+target_include_directories(test3 PRIVATE ${CMAKE_BINARY_DIR}/libs/include)
 
 target_link_libraries(test3 PRIVATE
+    ${CMAKE_BINARY_DIR}/libs/libsimplewebm.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbis.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbisenc.a
+    ${CMAKE_BINARY_DIR}/libs/libvorbisfile.a
+    ${CMAKE_BINARY_DIR}/libs/libopus.a
+    ${CMAKE_BINARY_DIR}/libs/libogg.a
+    ${CMAKE_BINARY_DIR}/libs/libvpx.a
+    ${CMAKE_BINARY_DIR}/libs/libwebm.a
+#    ${CMAKE_BINARY_DIR}/libs/libsoloud.a # soloud isn't necessary for this test
+    ${CMAKE_BINARY_DIR}/libs/libSDL2.a
+    ${CMAKE_BINARY_DIR}/libs/libSDL2main.a
+    ${PTHREAD_LIB}
+    ${CMAKE_DL_LIBS}
+)
+
+# fourth
+add_executable(test4 test3.cpp)
+target_include_directories(test4 PRIVATE ${CMAKE_BINARY_DIR}/libs/include)
+
+target_link_libraries(test4 PRIVATE
+    ${CMAKE_BINARY_DIR}/libs/libopenavmedia.a
+    ${PTHREAD_LIB}
+    ${CMAKE_DL_LIBS}
+)
+
+# fifth
+add_executable(test5 test5.cpp)
+target_include_directories(test5 PRIVATE ${CMAKE_BINARY_DIR}/../tests/ ${CMAKE_BINARY_DIR}/libs/include)
+
+target_link_libraries(test5 PRIVATE
     ${CMAKE_BINARY_DIR}/libs/libsimplewebm.a
     ${CMAKE_BINARY_DIR}/libs/libvorbis.a
     ${CMAKE_BINARY_DIR}/libs/libvorbisenc.a
@@ -55,11 +85,11 @@ target_link_libraries(test3 PRIVATE
     ${CMAKE_DL_LIBS}
 )
 
-# fourth
-add_executable(test4 test3.cpp)
-target_include_directories(test4 PRIVATE ${CMAKE_BINARY_DIR}/../tests/ ${CMAKE_BINARY_DIR}/libs/include)
+# sixth
+add_executable(test6 test5.cpp)
+target_include_directories(test6 PRIVATE ${CMAKE_BINARY_DIR}/../tests/ ${CMAKE_BINARY_DIR}/libs/include)
 
-target_link_libraries(test4 PRIVATE
+target_link_libraries(test6 PRIVATE
     ${CMAKE_BINARY_DIR}/libs/libopenavmedia.a
     ${PTHREAD_LIB}
     ${CMAKE_DL_LIBS}

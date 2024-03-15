@@ -50,7 +50,7 @@ CustomAudioSourceInstance::CustomAudioSourceInstance(CustomAudioSource* aSource)
 unsigned int CustomAudioSourceInstance::getAudio(float* aBuffer, unsigned int aSamplesToRead, unsigned int aBufferSize)
 {
     unsigned int samplesWritten = 0;
-    for (unsigned int i = 0; i < aSamplesToRead; i += mParentSource->mChannels)
+    for (unsigned int i = 0; i < aSamplesToRead; ++i, ++samplesWritten)
     {
         // Mono audio
         if (mParentSource->mChannels == 1) {
@@ -72,19 +72,23 @@ unsigned int CustomAudioSourceInstance::getAudio(float* aBuffer, unsigned int aS
                 mParentSource->audioBuffer.pop_front();
                 
                 // normalize the samples to the range of -1.0 to 1.0
-                aBuffer[i] = sampleLeft / 32768.0f; // left channel
-                aBuffer[i + 1] = sampleRight / 32768.0f; // right channel
+                aBuffer[i]     = std::max(-1.0f, std::min(1.0f, sampleLeft / 32768.0f));  // left channel
+                aBuffer[i + 1] = std::max(-1.0f, std::min(1.0f, sampleRight / 32768.0f)); // right channel
+
                 //DEBUG: std::cout << "i: " << i << " i+1: " << i + 1 << " aBufferSize: " << aBufferSize << std::endl;
             } else {
-                //DEBUG: std::cout << "Lack of Data" << std::endl;
+                //DEBUG: std::cout << "Lack of Data - aSamplesToRead: " << aSamplesToRead << " - aBufferSize:" << aBufferSize << std::endl;
                 aBuffer[i] = aBuffer[i + 1] = 0.0f; // when there is not enough data for stereo, output silence
             }
         }
-
-        samplesWritten += mParentSource->mChannels;
     }
 
-    //DEBUG: std::cout << "aBufferSize: " << aBufferSize << " mParentSource->audioBuffer.size(): " << mParentSource->audioBuffer.size() << std::endl;
+    /*
+    //DEBUG: 
+    std::cout << "aBufferSize: " << aBufferSize 
+        << " - mParentSource->audioBuffer.size(): " << mParentSource->audioBuffer.size()
+        << " - samplesWritten: " << samplesWritten << std::endl;
+    */
     
     return samplesWritten;
 }

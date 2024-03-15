@@ -6,6 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <deque>
+#include <fstream>
 
 #include "ogg/ogg.h"
 #include "vorbis/codec.h"
@@ -15,14 +16,14 @@
 #include "soloud/soloud.h"
 #include "soloud/soloud_wav.h"
 
-#include "webm/mkvparser/mkvparser.h" // libsimplewebm use these three headers to playback video
+#include "webm/mkvparser/mkvparser.h" // libsimplewebm uses these three headers to playback video
 #include "simplewebm/OpusVorbisDecoder.hpp"
 #include "simplewebm/VPXDecoder.hpp"
 
-#include "../tests/test3.hpp"
+#include "../tests/test5.hpp"
 
 /**
- * @brief A few SDL specific functions that are custom made for handling graphics.
+ * @brief This namespace contains a few SDL specific functions that are custom made for handling graphics.
  * @note These functions could have just as easily been done using GLFW and OpenGL, etc.
  */
 namespace sdl {
@@ -41,7 +42,7 @@ namespace sdl {
         }
 
         // add a renderer to the window
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
         if (renderer == nullptr) {
             std::cerr << "Failed to create renderer: " << SDL_GetError() << std::endl;
             SDL_DestroyWindow(window);
@@ -93,13 +94,13 @@ namespace sdl {
 
 /**
  * --------------------------------------------------------------------------------
- * Below are custom functions that asssist in playback.
+ * Below is a custom classes and functions that assist in playback.
  * --------------------------------------------------------------------------------
  */
 
 /**
- * @brief Matroska parser class derived from WebM library
- * @note Remember that the WebM container is a derivative of Matroska. So don't be surprised by the naming of this class.
+ * @brief Matroska parser class inherited from WebM library
+ * @note WebM containers are a derivative of Matroska
  */
 class MkvReader: public mkvparser::IMkvReader {
     public:
@@ -142,13 +143,24 @@ class MkvReader: public mkvparser::IMkvReader {
 	FILE *m_file;
 };
 
+/**
+ * @brief Calculates the time elapsed since previous function call and this one
+ * @param last The previous time
+ * @param now The current time
+ * @return float that represents the time elapsed between calls
+ */
 float get_time_delta(int64_t* last, int64_t* now) {
     *last = *now;
     *now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-    return (float)(*now - *last); // time elapsed since previous function call and this one
+    return static_cast<float>(*now - *last);
 }
 
+/**
+ * @brief This function increments the frame count
+ * @param time_delta The elapsed time since the start of the current frame
+ * @return If time_delta exceeds 1 second, frame count is returned. Otherwise, the integer -1 is returned. 
+ */
 int32_t update_frames_per_second(float time_delta) {
     static float time_delta_accumulator = 0.0f; // Uses two internal variables...
     static int32_t frame_counter = 0;
@@ -170,7 +182,12 @@ int32_t update_frames_per_second(float time_delta) {
     return -1; // A negative 1 is returned until ready to provide a frame count update
 }
 
-
+/**
+ * @brief Gets the frame count that the webm file was encoded with
+ * @param filePath The file path of the webm file
+ * @param rate This argument will be set to the frame count
+ * @return Zero upon success, otherwise a nonzero error code.
+ */
 uint32_t webm_frame_rate(const char* filePath, double& rate) {
     // parse the EBML header
     MkvReader reader(filePath);
@@ -230,6 +247,9 @@ uint32_t webm_frame_rate(const char* filePath, double& rate) {
 
 const int MILLISECONDS_IN_A_SECOND = 1000;
 
+/**
+ * @brief The purpose of this class is to ensure that a loop iterates a target number of times.
+ */
 class FrameRegulator {
     public:
     FrameRegulator(int target_fps) {
@@ -264,6 +284,12 @@ class FrameRegulator {
     int m_targetFPS;                // target number of frames-per-second
     uint64_t m_targetFrameDuration; // duration in milliseconds
 };
+
+/**
+ * --------------------------------------------------------------------------------
+ * Main
+ * --------------------------------------------------------------------------------
+ */
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -317,13 +343,46 @@ int main(int argc, char* argv[]) {
     customSource.mChannels = demuxer.getChannels();
     customSource.mBaseSamplerate = demuxer.getSampleRate();
     SoLoud::Soloud soloud;
-    soloud.init();
+    soloud.init(SoLoud::Soloud::CLIP_ROUNDOFF, SoLoud::Soloud::AUTO, demuxer.getSampleRate(), 0, demuxer.getChannels());
     SoLoud::handle soundHandle;
 
     WebMFrame videoFrame, audioFrame;    // two frame types and two buffers for manipulating the data within them
     VPXDecoder::Image image;
     short* pcm = audioDec.isOpen() ? new short[audioDec.getBufferSamples() * demuxer.getChannels()] : nullptr;
-    SoLoud::Wav audioSample;             // buffer for playing back decoded audio samples
+
+    // all initialization is done, now we must decode the audio from the webm file
+    WebMDemuxer demuxer2(new MkvReader(argv[1]));
+    OpusVorbisDecoder preAudioDec(demuxer2);
+    
+    while (demuxer2.readFrame(NULL, &audioFrame)) {
+        if (preAudioDec.isOpen() && audioFrame.isValid()) {
+            // suck up all the audio data
+            int numOutSamples;
+            if (!preAudioDec.getPCMS16(audioFrame, pcm, numOutSamples)) {
+                std::cerr << "Failed to decode audio frame." << std::endl;
+                SDL_Quit();
+                return EXIT_FAILURE;
+            }
+
+            // and put it in the audioBuffer vector
+            for (int i = 0; i < (numOutSamples * demuxer2.getChannels()); i++) {
+                customSource.audioBuffer.push_back(pcm[i]);
+            }
+        }
+    }
+    std::ofstream outFile("output_audio.raw", std::ios::binary);
+    if (outFile.is_open()) {
+        for (short sample : customSource.audioBuffer) {
+            outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
+        }
+        outFile.close();
+        std::cout << "Output audio saved." << std::endl;
+    } else {
+        std::cerr << "Failed to open output_audio.raw for writing." << std::endl;
+    }
+
+    //delete[] pcm;
+    std::cout << "While coming up - " << soloud.mSamplerate << " - " << soloud.mBufferSize << std::endl;
 
     // loop for playing the video
 	while ((!is_user_quitting) && demuxer.readFrame(&videoFrame, &audioFrame)) {
@@ -341,7 +400,7 @@ int main(int argc, char* argv[]) {
         
         // update the frame count
         frame_count = update_frames_per_second(delta);
-        if (frame_count != -1) std::cout << "Frames Per Second: " << frame_count << std::endl;
+        if (frame_count != -1) std::cout << "Video Frames Per Second: " << frame_count << std::endl;
 
         // get the next video frame based on playback position and put its pixels into a texture
         if (videoDec.isOpen() && videoFrame.isValid()) {
@@ -393,7 +452,7 @@ int main(int argc, char* argv[]) {
         }
 
         // get the next video frame based on playback position and put its pixels into a texture
-        if (audioDec.isOpen() && audioFrame.isValid())
+        /*if (audioDec.isOpen() && audioFrame.isValid())
         {
             int numOutSamples;
             if (!audioDec.getPCMS16(audioFrame, pcm, numOutSamples))
@@ -402,19 +461,8 @@ int main(int argc, char* argv[]) {
                 soloud.deinit();
                 sdl::shutdown_sdl_window(window, renderer, texture);
                 return EXIT_FAILURE;
-            }
-            
-            // DEBUG: std::cout << "numOutSamples: " << numOutSamples << " delta: " << delta << std::endl;
-            
-            /* DEBUG: Printing the samples out to compare their decoded values
-            for (size_t i = 0; i < numOutSamples; ++i) std::cout << pcm[i] << " ";
-            std::cout << std::endl;
-            std::cout.flush();
-            if (numOutSamples > 0) exit(0);
-            */
+            }*/
 
-            //DEBUG: std::cout << (audioDec.getBufferSamples() * demuxer.getChannels()) << " " << numOutSamples << " " << demuxer.getSampleRate() << " " << demuxer.getChannels() << std::endl;
-            
             /* DEBUG: Printing the raw audio out to a file to check/hear it in Audacity software
             FILE* descriptor = fopen("./theraw", "ab");
             fwrite(pcm, 1, numOutSamples * demuxer.getChannels() * sizeof(short), descriptor);
@@ -422,14 +470,15 @@ int main(int argc, char* argv[]) {
             */
            
             // Push the decoded samples into the buffer.
-            for (int i = 0; i < numOutSamples; i++) {
+            /*for (int i = 0; i < (numOutSamples * demuxer.getChannels()); i++) {
                 customSource.audioBuffer.push_back(pcm[i]);
-            }
+            }*/
             
-            if (!soloud.isValidVoiceHandle(soundHandle) || !soloud.getVoiceCount()) { // prevent any potential repeated playback
-                soundHandle = soloud.play(customSource, 2.0f);
+            // ensure playback can't repeat and play
+            if (!soloud.isValidVoiceHandle(soundHandle) || !soloud.getVoiceCount()) {
+                soundHandle = soloud.play(customSource, 1.0f);
             }
-        }
+        //}
 
         // render the texture
         sdl::copy_sdl_texture_to_sdl_renderer(renderer, texture);

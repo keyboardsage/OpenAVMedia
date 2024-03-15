@@ -10,7 +10,7 @@
 #include "simplewebm/VPXDecoder.hpp"
 
 /**
- * @brief Matroska parser class derived from WebM 
+ * @brief Matroska parser class inherited from WebM library
  * @note WebM containers are a derivative of Matroska
  */
 class MkvReader: public mkvparser::IMkvReader {

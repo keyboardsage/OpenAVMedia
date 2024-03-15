@@ -338,3 +338,5 @@ add_dependencies(test1 combine_into_singular_static_lib)  # Create the singular 
 add_dependencies(test2 test1)  # Lastly, finish making the tests
 add_dependencies(test3 test2)
 add_dependencies(test4 test3)
+add_dependencies(test5 test4)
+add_dependencies(test6 test5)

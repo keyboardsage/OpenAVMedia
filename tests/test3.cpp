@@ -6,7 +6,6 @@
 #include <chrono>
 #include <thread>
 #include <deque>
-#include <vector>
 
 #include "ogg/ogg.h"
 #include "vorbis/codec.h"
@@ -19,6 +18,8 @@
 #include "webm/mkvparser/mkvparser.h" // libsimplewebm use these three headers to playback video
 #include "simplewebm/OpusVorbisDecoder.hpp"
 #include "simplewebm/VPXDecoder.hpp"
+
+#include "../tests/test3.hpp"
 
 /**
  * @brief A few SDL specific functions that are custom made for handling graphics.
@@ -87,27 +88,6 @@ namespace sdl {
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);
         SDL_RenderPresent(renderer);
-    }
-
-    Uint32 bootstrap_sdl_audio(SDL_AudioSpec& want, SDL_AudioSpec& have, SDL_AudioDeviceID& audioDevice) {
-        if (SDL_Init(SDL_INIT_AUDIO) != 0) {
-            return 1;
-        }
-
-        audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-        if (audioDevice == 0) {
-            return 2;
-        }
-
-        SDL_PauseAudioDevice(audioDevice, 0); // Start playing
-
-        return 0;
-    }
-
-    Uint32 shutdown_sdl_audio(SDL_AudioDeviceID& audioDevice) {
-        SDL_CloseAudioDevice(audioDevice);
-
-        return 0;
     }
 }
 
@@ -285,24 +265,6 @@ class FrameRegulator {
     uint64_t m_targetFrameDuration; // duration in milliseconds
 };
 
-// Define an audio callback function that SDL will call when it needs more audio data
-void SDLCALL audio_callback(void* userdata, Uint8* stream, int len) {
-    auto audioBuffer = static_cast<std::vector<short>*>(userdata);
-    // Ensure there's enough data to cover `len` bytes; otherwise, fill with silence.
-    size_t lenInShorts = len / sizeof(short);
-    if (audioBuffer->size() < lenInShorts) {
-        // Fill the rest with silence if there's not enough data
-        size_t remaining = lenInShorts - audioBuffer->size();
-        std::vector<short> silence(remaining, 0);
-        SDL_memcpy(stream, audioBuffer->data(), audioBuffer->size() * sizeof(short));
-        SDL_memcpy(stream + audioBuffer->size() * sizeof(short), silence.data(), remaining * sizeof(short));
-        audioBuffer->clear();
-    } else {
-        SDL_memcpy(stream, audioBuffer->data(), len);
-        audioBuffer->erase(audioBuffer->begin(), audioBuffer->begin() + lenInShorts);
-    }
-}
-
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cerr << "Requires a single argument that contains the video file's file path." << std::endl;
@@ -335,24 +297,6 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // get a SDL audio device open
-    std::vector<short> audioBuffer;
-    SDL_AudioDeviceID audioDevice;
-    SDL_AudioSpec want, have;
-    SDL_zero(want);
-    want.freq = demuxer.getSampleRate();
-    want.format = AUDIO_S16SYS;
-    want.channels = demuxer.getChannels();
-    want.samples = 4096;                 // buffer size
-    want.callback = audio_callback;
-    want.userdata = &audioBuffer;
-    if (sdl::bootstrap_sdl_audio(want, have, audioDevice) != 0) {
-        std::cerr << "SDL audio bootstrapping failed: #" << SDL_GetError() << std::endl;
-        sdl::shutdown_sdl_window(window, renderer, texture);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
-
     // creating variables prior to the loop, so they aren't created repeatedly per iteration
     bool is_user_quitting = false;        // controls when to quit running the app
 
@@ -368,6 +312,13 @@ int main(int argc, char* argv[]) {
 
     VPXDecoder videoDec(demuxer, 8);     // interfaces for video codecs
     OpusVorbisDecoder audioDec(demuxer);
+
+    CustomAudioSource customSource;      // get SoLoud initialized
+    customSource.mChannels = demuxer.getChannels();
+    customSource.mBaseSamplerate = demuxer.getSampleRate();
+    SoLoud::Soloud soloud;
+    soloud.init();
+    SoLoud::handle soundHandle;
 
     WebMFrame videoFrame, audioFrame;    // two frame types and two buffers for manipulating the data within them
     VPXDecoder::Image image;
@@ -397,7 +348,7 @@ int main(int argc, char* argv[]) {
             if (!videoDec.decode(videoFrame))
             {
                 std::cerr << "Failed to decode video frame. Shutting down..." << std::endl;
-                sdl::shutdown_sdl_audio(audioDevice);
+                soloud.deinit();
                 sdl::shutdown_sdl_window(window, renderer, texture);
                 return EXIT_FAILURE;
             }
@@ -424,7 +375,7 @@ int main(int argc, char* argv[]) {
                                     image.planes[1], image.linesize[1],           // U (Cb) plane
                                     image.planes[2], image.linesize[2]) == -1) {  // V (Cr) plane
                     std::cerr << "Unable to update the texture with YUV data: " << SDL_GetError() << std::endl;
-                    sdl::shutdown_sdl_audio(audioDevice);
+                    soloud.deinit();
                     sdl::shutdown_sdl_window(window, renderer, texture);
                     return EXIT_FAILURE;
                 }
@@ -432,7 +383,7 @@ int main(int argc, char* argv[]) {
                 // ...and then rendering this texture, SDL will handle the YUV to RGB conversion internally
                 if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
                     std::cerr << "Unable to update render target with the latest texture: " << SDL_GetError() << std::endl;
-                    sdl::shutdown_sdl_audio(audioDevice);
+                    soloud.deinit();
                     sdl::shutdown_sdl_window(window, renderer, texture);
                     return EXIT_FAILURE;
                 }
@@ -448,22 +399,35 @@ int main(int argc, char* argv[]) {
             if (!audioDec.getPCMS16(audioFrame, pcm, numOutSamples))
             {
                 std::cerr << "Failed to decode audio frame. Shutting down..." << std::endl;
-                sdl::shutdown_sdl_audio(audioDevice);
+                soloud.deinit();
                 sdl::shutdown_sdl_window(window, renderer, texture);
                 return EXIT_FAILURE;
             }
             
             // DEBUG: std::cout << "numOutSamples: " << numOutSamples << " delta: " << delta << std::endl;
             
+            /* DEBUG: Printing the samples out to compare their decoded values
+            for (size_t i = 0; i < numOutSamples; ++i) std::cout << pcm[i] << " ";
+            std::cout << std::endl;
+            std::cout.flush();
+            if (numOutSamples > 0) exit(0);
+            */
+
+            //DEBUG: std::cout << (audioDec.getBufferSamples() * demuxer.getChannels()) << " " << numOutSamples << " " << demuxer.getSampleRate() << " " << demuxer.getChannels() << std::endl;
+            
             /* DEBUG: Printing the raw audio out to a file to check/hear it in Audacity software
             FILE* descriptor = fopen("./theraw", "ab");
             fwrite(pcm, 1, numOutSamples * demuxer.getChannels() * sizeof(short), descriptor);
             fclose(descriptor);
             */
-            
-            // Push the decoded samples into the buffer
+           
+            // Push the decoded samples into the buffer.
             for (int i = 0; i < numOutSamples; i++) {
-                audioBuffer.push_back(pcm[i]);
+                customSource.audioBuffer.push_back(pcm[i]);
+            }
+            
+            if (!soloud.isValidVoiceHandle(soundHandle) || !soloud.getVoiceCount()) { // prevent any potential repeated playback
+                soundHandle = soloud.play(customSource, 2.0f);
             }
         }
 
@@ -483,7 +447,7 @@ int main(int argc, char* argv[]) {
 
     // clean up
     delete[] pcm;
-    sdl::shutdown_sdl_audio(audioDevice);
+    soloud.deinit();
     sdl::shutdown_sdl_window(window, renderer, texture);
 
     return EXIT_SUCCESS;

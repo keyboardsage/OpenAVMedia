@@ -72,24 +72,26 @@ unsigned int CustomAudioSourceInstance::getAudio(float* aBuffer, unsigned int aS
                 mParentSource->audioBuffer.pop_front();
                 
                 // normalize the samples to the range of -1.0 to 1.0
-                aBuffer[i]     = std::max(-1.0f, std::min(1.0f, sampleLeft / 32768.0f));  // left channel
-                aBuffer[i + 1] = std::max(-1.0f, std::min(1.0f, sampleRight / 32768.0f)); // right channel
-
-                //DEBUG: std::cout << "i: " << i << " i+1: " << i + 1 << " aBufferSize: " << aBufferSize << std::endl;
+                // also add some headroom, to prevent clipping
+                // left channel is first half of the buffer, right channel is second half of the buffer
+                aBuffer[i]     = (sampleLeft / 32768.0f)*0.95;            // left channel
+                aBuffer[i + aBufferSize] = (sampleRight / 32768.0f)*0.95; // right channel
             } else {
-                //DEBUG: std::cout << "Lack of Data - aSamplesToRead: " << aSamplesToRead << " - aBufferSize:" << aBufferSize << std::endl;
-                aBuffer[i] = aBuffer[i + 1] = 0.0f; // when there is not enough data for stereo, output silence
+                //DEBUG: 
+                std::cout << "Lack of Data - aSamplesToRead: " << aSamplesToRead << " - aBufferSize:" << aBufferSize << std::endl;
+                aBuffer[i] = aBuffer[i + aBufferSize] = 0.0f; // when there is not enough data for stereo, output silence
             }
         }
     }
 
     /*
-    //DEBUG: 
+    // DEBUG: 
     std::cout << "aBufferSize: " << aBufferSize 
         << " - mParentSource->audioBuffer.size(): " << mParentSource->audioBuffer.size()
         << " - samplesWritten: " << samplesWritten << std::endl;
+    std::cout << "Consuming " << aSamplesToRead << " samples from buffer. Remaining size: " << mParentSource->audioBuffer.size() << std::endl;
     */
-    
+
     return samplesWritten;
 }
 

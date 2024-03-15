@@ -21,6 +21,8 @@
 #include "simplewebm/VPXDecoder.hpp"
 
 #include "../tests/test5.hpp"
+#define DR_WAV_IMPLEMENTATION
+#include "../tests/dr_wav.h"
 
 /**
  * @brief This namespace contains a few SDL specific functions that are custom made for handling graphics.
@@ -351,9 +353,10 @@ int main(int argc, char* argv[]) {
     short* pcm = audioDec.isOpen() ? new short[audioDec.getBufferSamples() * demuxer.getChannels()] : nullptr;
 
     // all initialization is done, now we must decode the audio from the webm file
+    /*
     WebMDemuxer demuxer2(new MkvReader(argv[1]));
     OpusVorbisDecoder preAudioDec(demuxer2);
-    
+
     while (demuxer2.readFrame(NULL, &audioFrame)) {
         if (preAudioDec.isOpen() && audioFrame.isValid()) {
             // suck up all the audio data
@@ -370,6 +373,23 @@ int main(int argc, char* argv[]) {
             }
         }
     }
+    */
+
+    unsigned int channels;
+    unsigned int sampleRate;
+    drwav_uint64 totalSampleCount;
+    short* blah = drwav_open_file_and_read_pcm_frames_s16("output_audio.wav", 
+        &channels, &sampleRate, &totalSampleCount, nullptr);
+    for (int i = 0; i < (totalSampleCount*2); i++) {
+        customSource.audioBuffer.push_back(blah[i]);
+    }
+
+    // status
+    std::cout << "Audio deque/buffer size: " << customSource.audioBuffer.size()
+        << "\nSoloud Global Samplerate: " << soloud.mSamplerate
+        << "\nSoloud Global Buffer Size: " << soloud.mBufferSize << std::endl;
+    
+    /*
     std::ofstream outFile("output_audio.raw", std::ios::binary);
     if (outFile.is_open()) {
         for (short sample : customSource.audioBuffer) {
@@ -380,9 +400,7 @@ int main(int argc, char* argv[]) {
     } else {
         std::cerr << "Failed to open output_audio.raw for writing." << std::endl;
     }
-
-    //delete[] pcm;
-    std::cout << "While coming up - " << soloud.mSamplerate << " - " << soloud.mBufferSize << std::endl;
+    */
 
     // loop for playing the video
 	while ((!is_user_quitting) && demuxer.readFrame(&videoFrame, &audioFrame)) {
@@ -476,7 +494,7 @@ int main(int argc, char* argv[]) {
             
             // ensure playback can't repeat and play
             if (!soloud.isValidVoiceHandle(soundHandle) || !soloud.getVoiceCount()) {
-                soundHandle = soloud.play(customSource, 1.0f);
+                soundHandle = soloud.play(customSource);
             }
         //}
 

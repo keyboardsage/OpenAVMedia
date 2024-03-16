@@ -1,66 +1,108 @@
 # OpenAVMedia
-A subset of open source audio and video media libraries paired with a convenient build system. 
+Some open source audio and video media libraries, a convenient build system, and a few examples. 
+
+This project compiles several open source audio/video projects and produces a single directory filled with the necessary static libraries and headers for playing back `.webm` video files.
+
+Additionally, it contains examples showing how to use the aforementioned open source projects to playback `.webm` media in the `tests` directory.
 
 # Motivation
-Open source projects such as vorbis, vpx, etc. utilize several different build systems; such as Makefile, Cmake, Premake, Bash files, Genie, Ninja, etc. Developers run into issues such as:
+While developing a game engine I needed cutscene functionality. This forced me to evaluate the licenses of libav and VLC; which didn't suit my purposes. In brief:
 
-1. Configuring and compiling each project individually. (this is time-consuming)
-2. Library compilation relies on the underlying OS.     (links against the wrong library version)
+- libav: Uses GPL and LGPL code. Static linking with its GPL components requires releasing your source code, this can be avoided by dynamically linking only LGPL parts, which necessitates including those libraries when you deploy.
+- VLC: Its legal complexities are nuanced, stemming from software patent laws that differ between the US and EU. VideoLan's [legal page](https://www.videolan.org/legal.html) notes that EU law doesn't recognize software as patentable, potentially complicating H.264/H.265 and the distribution of other codecs.
 
-The purpose of this project is to create a CMake file that will compile all of the audio/video projects and produce a single directory filled with the necessary static libraries and headers.
+So, I sought to cobble together a video player using various open source audio/video decoders.
 
-# Who Needs This
-This saves a developer working on an audio/video application such as an audio player, video player, game engine, etc. from having to collect all of these libraries and configure them themselves.
+Firstly, the are a plethora of build systems in use by open source projects like vorbis, vpx, etc.; namely Make, Cmake, Premake, GENie, to name a few. This project uses the CPM extension to download the dependencies for you and consolidate them under a single CMake build system. This prevents you from having to do the time-consuming busy work of configuring and compiling each project separately.  
+Secondly, Cmake produces statically linkable files. You get the benefits of a static library (see "Why a Static Library" section for details).  
 
-Personally, I use this project in a CMakeLists.txt that uses CPM to conveniently fetch this one project.
+TLDR; I aimed to find a simple, static library for easy video playback that minimizes dependencies, compiles smoothly, and is safe for commercial use without legal worries.
 
-# Why Static Library
-Different versions of the same shared object in theory will support a program equally. However, depending on the nature of the changes between them, its possible that the difference between versions can break the program.
+# Why a Static Library
 
-It is good practice to test your program with different versions of the same dynamic library to ensure a program is functioning correctly, especially when upgrading to a new version. Alternatively, you can use versioning and dependency management tools to specify the exact version of the dynamic library that your program requires. Doing so helps prevent unexpected issues that can arise due to differences in version.
 
-So put simply, its a design decision to prevent versioning issues. 
+In theory, different versions of the same dynamic library should work. However, in practice, your program may break due to the nature of the changes between them.
+
+Best practice is to extensively test multiple versions of the same dynamic library. Alternatively, you can restrict the dynamic libraries to certain versions; ones you know perform correctly. However, if you take this latter approach, you are practically using a static library anyway.
+
+Moreover, In the context of a game engine, here are some considerations:
+1. Only one game instance runs at a time, singly, which makes the advantage of sharing the library in memory irrelevant.
+2. Consistent library versions across all players helps prevent giving any one person an unfair advantage.
+3. Dynamic libraries pose additional security risks, like LD_PRELOAD exploits and other linker/loader attacks.
+4. Game updates provide control over dependencies, ensuring game developers, not end-users, manage and maintain the dependency code's uniformity.
+
+Put simply, its a design decision that prevents versioning issues, helps game engines maintain fairness across installations, and it suits this particular scenario.
 
 # Libraries Included
 ## Included
-- [ogg](https://github.com/xiph/ogg)
-- [vorbis](https://github.com/xiph/vorbis)
-- [opus](https://github.com/xiph/opus)
-- [webm](https://github.com/webmproject/libwebm)
-- [vpx](https://github.com/webmproject/libvpx)
-- [sdl2](https://github.com/libsdl-org/SDL)
-- [soloud](https://github.com/jarikomppa/soloud)
-- [libsimplewebm](https://github.com/zaps166/libsimplewebm)
+Library | URL
+--- | ---
+ogg | [https://github.com/xiph/ogg](https://github.com/xiph/ogg)
+vorbis | [https://github.com/xiph/vorbis](https://github.com/xiph/vorbis)
+opus | [https://github.com/xiph/opus](https://github.com/xiph/opus)
+webm | [https://github.com/webmproject/libwebm](https://github.com/webmproject/libwebm)
+vpx | [https://github.com/webmproject/libvpx](https://github.com/webmproject/libvpx)
+sdl2 | [https://github.com/libsdl-org/SDL](https://github.com/libsdl-org/SDL)
+soloud | [https://github.com/jarikomppa/soloud](https://github.com/jarikomppa/soloud)
+libsimplewebm | [https://github.com/zaps166/libsimplewebm](https://github.com/zaps166/libsimplewebm)
 
 ## Maybe in Future
-- [daala](https://github.com/xiph/daala)
-- [flac](https://github.com/xiph/flac)
-- [xspf](https://sourceforge.net/projects/libspiff/)
-- [qoa](https://github.com/phoboslab/qoa)
+Library | URL
+--- | ---
+daala | [https://github.com/xiph/daala](https://github.com/xiph/daala)
+flac | [https://github.com/xiph/flac](https://github.com/xiph/flac)
+xspf | [https://sourceforge.net/projects/libspiff/](https://sourceforge.net/projects/libspiff/)
+qoa | [https://github.com/phoboslab/qoa](https://github.com/phoboslab/qoa)
 
-# Current State
-Supported Platforms:
+# Supported Platforms
   - [X] Linux
   - [ ] Mac
   - [ ] Windows
 
-`tests/test3` and `tests/test4` demonstrate how to utilize the libraries to make a simple WEBM video player.
-  - It plays VP8/Vorbis([download page](https://commons.wikimedia.org/wiki/File:Big_Buck_Bunny_4K.webm))
-  - It plays VP9/Opus([download page](https://commons.wikimedia.org/wiki/File:Charge_-_Blender_Open_Movie-full_movie.webm))
-  - It plays mono encoded audio. It **does not** play stereo (such as [this video](https://commons.wikimedia.org/wiki/File:WING_IT!_-_Blender_Open_Movie-full_movie.webm)), or other multi-channel audio.
+# Current State
+Working Audio and Video playback:
+`tests/test5` and `tests/test6` demonstrate how to utilize the libraries to make a simple WEBM video player.
+  - It plays VP8/Vorbis ([download page](https://www.webmfiles.org/demo-files/))
+  - It plays VP9/Opus   ([download page](https://commons.wikimedia.org/wiki/File:WING_IT!_-_Blender_Open_Movie-full_movie.webm))
+  - Videos must be encoded with mono or stereo
 
 <p align="center">
-<img src="test3_running.gif" alt="Test3 running">
+<img src="test5_running.gif" alt="Test5 running">
 </p>
 
 # Building
-Go into the build directory. Create the cmake files using the CMakeLists.txt and make.
+Go into the build directory. Configure and create the project like so:
 ```
 cd build
 cmake ..
 make
 ```
 The static file for the libraries built will be under `build/libs` and their include files will be under `build/libs/include`.
+
+# Running
+Go into the build directory and run them like so:
+```
+$ cd build
+
+$ ./tests/test1
+$ ./tests/test2
+
+$ ./tests/test3 ../tests/assets/big-buck-bunny_trailer.webm
+$ ./tests/test4 ../tests/assets/big-buck-bunny_trailer.webm
+
+$ ./tests/test5 ../tests/assets/WING_IT-Blender_Open_Movie-full_movie.webm
+$ ./tests/test6 ../tests/assets/WING_IT-Blender_Open_Movie-full_movie.webm
+```
+
+The purpose of each example is as follows:  
+`test1` - Shows the version of the statically compiled libraries by linking to each one individually.  
+`test2` - Same as test1 but links only against libopenavmedia.  
+
+`test3` - Plays the audio portion of a webm file, statically linked to each library again.  
+`test4` - Same as test3 but links only against libopenavmedia.a  
+
+`test5` - Plays a webm video file, statically linked to each library.  
+`test6` - Same as test5 but links only against libopenavmedia.a  
 
 # Cleaning
 Go into the build directory and run these commands.

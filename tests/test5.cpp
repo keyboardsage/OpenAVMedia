@@ -131,7 +131,6 @@ class MkvReader: public mkvparser::IMkvReader {
         if (total)
 			*total = total_pos;
 		if (available)
-			//*available = total_pos - curr_pos; // TODO: this seems logical but it causes the video playback to fail
             *available = total_pos;
 
 		return 0;

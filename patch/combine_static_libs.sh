@@ -18,6 +18,9 @@ ar -x libSDL2_test.a
 ar -x libsoloud.a
 ar -x libvorbisenc.a
 ar -x libvorbisfile.a
+ar -x libopusfile.a
+ar -x libFLAC.a
+ar -x libSDL2_mixer.a
 ar -x libogg.a
 ar -x libsimplewebm.a
 ar -x libvpx.a

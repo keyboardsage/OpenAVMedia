@@ -91,7 +91,7 @@ CPMAddPackage(
 )
 include(ExternalProject)
 if(NOT webm_SOURCE_DIR)
-  set(webm_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/webm-src")
+  set(webm_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/webm-src")
 endif()
 ExternalProject_Add(webm_build
     SOURCE_DIR ${webm_SOURCE_DIR}
@@ -245,6 +245,157 @@ ExternalProject_Add_Step(soloud_build copy_compiled_soloud_files
     ALWAYS TRUE
 )
 
+CPMAddPackage(
+  NAME Flac
+  GIT_TAG 1.4.3
+  GITHUB_REPOSITORY xiph/flac
+#  DOWNLOAD_ONLY True
+  OPTIONS
+    "BUILD_CXXLIBS OFF"
+    "BUILD_EXAMPLES OFF"
+    "BUILD_TESTING OFF"
+    "BUILD_DOCS OFF"
+    "INSTALL_MANPAGES OFF"
+)
+
+# Install opusfile for SDL_mixer later
+CPMAddPackage(
+  NAME opusfile
+#  GIT_VERSION v0.12
+  GIT_TAG 9d718345ce03b2fad5d7d28e0bcd1cc69ab2b166
+  GITHUB_REPOSITORY xiph/opusfile
+#  DOWNLOAD_ONLY True
+  OPTIONS
+    "OP_DISABLE_HTTP TRUE"
+    "OP_DISABLE_DOCS TRUE"
+    "OP_DISABLE_EXAMPLES TRUE"
+)
+
+# Compiles SDL_mixer
+CPMAddPackage(
+  NAME SDL_mixer
+  GITHUB_REPOSITORY libsdl-org/SDL_mixer
+  GIT_TAG release-2.8.0
+  DOWNLOAD_ONLY TRUE
+)
+
+# Compile SDL_mixer with the local SDL2, Opus, Ogg, and Vorbis libraries
+set(SDL2_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/SDL2")
+set(SDL2_LIBRARY "${CMAKE_BINARY_DIR}/libs/libSDL2.a")
+set(SDL2MAIN_LIBRARY "${CMAKE_BINARY_DIR}/libs/libSDL2main.a")
+
+set(OPUS_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/opus")
+set(OPUS_LIBRARY "${CMAKE_BINARY_DIR}/libs/libopus.a")
+
+set(OPUSFILE_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/opusfile")
+set(OPUSFILE_LIBRARY "${CMAKE_BINARY_DIR}/libs/libopusfile.a")
+
+set(OGG_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/ogg")
+set(OGG_LIBRARY "${CMAKE_BINARY_DIR}/libs/libogg.a")
+
+set(VORBIS_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/vorbis")
+set(VORBIS_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbis.a")
+set(VORBISENC_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbisenc.a")
+set(VORBISFILE_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbisfile.a")
+
+set(sdl_mixer_SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/sdl_mixer-src)
+set(sdl_mixer_BINARY_DIR ${CMAKE_BINARY_DIR}/_deps/sdl_mixer-build)
+
+ExternalProject_Add(sdl_mixer_build
+    SOURCE_DIR        "${sdl_mixer_SOURCE_DIR}"
+    BINARY_DIR        "${sdl_mixer_BINARY_DIR}"
+
+    # -------------------------------------------------------------------
+    # Pass all the necessary defines so that SDL_mixer uses local libs.
+    # These are the *most critical* flags:
+    # -------------------------------------------------------------------
+    CONFIGURE_COMMAND ${CMAKE_COMMAND}
+      -S ${sdl_mixer_SOURCE_DIR}
+      -B ${sdl_mixer_BINARY_DIR}
+      -DCMAKE_BUILD_TYPE=Release  # Build in release mode
+      -DSDL2_DISABLE_FIND_SDL2=ON # Telling SDL_mixer to disable attempts to find system SDL2
+
+      # Telling SDL_mixer to build purely static, i.e. no .so, .dll, etc.
+      -DSDL_SHARED=OFF
+      -DSDL_STATIC=ON
+      -DBUILD_SHARED_LIBS=OFF
+      -DSDL2MIXER_BUILD_SHARED_LIBS=OFF
+
+      -DSDL2MIXER_VENDORED=OFF         # Telling SDL_mixer not to fetch external libs (we have them locally)
+
+      # Control which decoders to enable
+      -DSDL2MIXER_OGG=ON
+      -DSDL2MIXER_VORBIS=VORBISFILE    # or STB, TREMOR, etc.
+      -DSDL2MIXER_VORBIS_VORBISFILE_SHARED=OFF
+      -DSDL2MIXER_OPUS=ON
+      -DSDL2MIXER_OPUS_SHARED=OFF
+      -DSDL2MIXER_MP3=ON
+      -DSDL2MIXER_MP3_MINIMP3=ON       # or MPG123 if you prefer
+
+      # and which types are not going to be supported
+      -DSDL2MIXER_GME=OFF        # no game-music-emu
+      -DSDL2MIXER_FLAC=OFF       # no FLAC
+      -DSDL2MIXER_MOD=OFF        # no MOD music
+      -DSDL2MIXER_MIDI=OFF       # no MIDI
+      -DSDL2MIXER_WAVPACK=OFF    # no WavPack
+      -DSDL2MIXER_CMD=OFF        # no external command music player
+
+      # Point SDL_mixer to the local SDL2
+      -DSDL2_INCLUDE_DIR=${SDL2_INCLUDE_DIR}       # Path to ... /include/SDL2
+      -DSDL2_LIBRARY=${SDL2_LIBRARY}               # Path to ... /libs/libSDL2.a
+      -DSDL2MAIN_LIBRARY=${SDL2MAIN_LIBRARY}       # Path to ... /libs/libSDL2main.a
+
+      # Force SDL_mixer to pick the local Ogg
+      -DOGG_INCLUDE_DIR="${OGG_INCLUDE_DIR}"         # Path to ... /libs/include/ogg
+      -DOGG_LIBRARY="${CMAKE_BINARY_DIR}/libs/libogg.a"
+
+      # Force SDL_mixer to pick the local Vorbis
+      -DVORBIS_INCLUDE_DIR="${VORBIS_INCLUDE_DIR}"   # Path to ... /libs/include/vorbis
+      -DVORBIS_LIBRARY="${CMAKE_BINARY_DIR}/libs/libvorbis.a"
+      -DVORBISENC_LIBRARY="${CMAKE_BINARY_DIR}/libs/libvorbisenc.a"
+      -DVORBISFILE_LIBRARY="${CMAKE_BINARY_DIR}/libs/libvorbisfile.a"
+
+      # Correctly point to the directory containing opus/opusfile.h
+      -DCMAKE_C_FLAGS="-I${CMAKE_BINARY_DIR}/libs/include/opus"
+
+      # Force SDL_mixer to pick the local Opus
+      -DOPUS_INCLUDE_DIR="${OPUS_INCLUDE_DIR}"       # Path to ... /libs/include/opus
+      -DOPUS_LIBRARY="${CMAKE_BINARY_DIR}/libs/libopus.a"
+
+      # Force SDL_mixer to pick the local OpusFile
+      -DOpusFile_INCLUDE_PATH=${OPUSFILE_INCLUDE_DIR}
+      -DOpusFile_LIBRARY=${CMAKE_BINARY_DIR}/libs/libopusfile.a
+
+      # Make sure we search local paths first
+      -DCMAKE_PREFIX_PATH="${CMAKE_BINARY_DIR}/libs" 
+      -DCMAKE_LIBRARY_PATH="${CMAKE_BINARY_DIR}/libs"
+      -DCMAKE_INCLUDE_PATH="${CMAKE_BINARY_DIR}/libs/include"
+
+      # Provide an install prefix (even if SDL2MIXER_INSTALL=OFF)
+      -DSDL2MIXER_INSTALL=OFF           # We are not going to "make install" SDL_mixer, so turned it off
+      -DCMAKE_INSTALL_PREFIX="${CMAKE_BINARY_DIR}/libs"
+    # -------------------------------------------------------------------
+
+    BUILD_COMMAND    ${CMAKE_COMMAND} --build ${sdl_mixer_BINARY_DIR} --target SDL2_mixer
+    INSTALL_COMMAND  ""
+
+    DEPENDS sdl2_build
+)
+
+ExternalProject_Add_Step(sdl_mixer_build copy_sdl_mixer_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/SDL_mixer/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${sdl_mixer_SOURCE_DIR}/include/"
+        "${CMAKE_BINARY_DIR}/libs/include/SDL_mixer/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${sdl_mixer_BINARY_DIR}/libSDL2_mixer.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    COMMENT "Copying SDL_mixer files and directories..."
+    DEPENDEES build
+    DEPENDERS install
+    ALWAYS TRUE
+)
+
 # Copy ogg files/directories to their final build location under build/libs/
 add_custom_target(copy_ogg_files
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs
@@ -315,6 +466,38 @@ add_custom_target(copy_vpx_files
     COMMENT "Copying vpx files and directories..."
 )
 
+# Copy flac files/directories to their final build location under build/libs/
+add_custom_target(copy_flac_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/FLAC
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/flac-src/include/FLAC/"
+        "${CMAKE_BINARY_DIR}/libs/include/FLAC"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/flac-build/src/libFLAC/libFLAC.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    DEPENDS setup_final_destination
+    COMMENT "Copying flac files and directories..."
+)
+
+# Copy opusfile files/directories to their final build location under build/libs/
+add_custom_target(copy_opusfile_files
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/opusfile
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/opusfile-src/include/"
+        "${CMAKE_BINARY_DIR}/libs/include/opusfile"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/_deps/opusfile-build/libopusfile.a"
+        "${CMAKE_BINARY_DIR}/libs/"
+    
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/opus/opus
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/_deps/opusfile-src/include/"
+        "${CMAKE_BINARY_DIR}/libs/include/opus/opus"
+
+    DEPENDS setup_final_destination
+    COMMENT "Copying opusfile files and directories..."
+)
+
 # Combines the multiple libraries and places them into a singular libopenavmedia.a
 add_custom_target(combine_into_singular_static_lib
     COMMAND /bin/sh -c "./../patch/combine_static_libs.sh"
@@ -333,7 +516,12 @@ add_dependencies(copy_vpx_files copy_opus_files)
 
 add_dependencies(libsimplewebm_build copy_vpx_files)  # After VPX, Vorbis, and Opus are ready/copied
 add_dependencies(soloud_build libsimplewebm_build)    # The necessities to build libsimplewebm_build exist, build
-add_dependencies(combine_into_singular_static_lib soloud_build) # Build SoLoud, which triggers building SDL2
+add_dependencies(opusfile soloud_build)               # Build SoLoud, which triggers building SDL2
+add_dependencies(FLAC opusfile)                       # Build opusfile
+add_dependencies(copy_opusfile_files FLAC)                # Build flac
+add_dependencies(copy_flac_files copy_opusfile_files)     # Ready/Copy the OpusFile library
+add_dependencies(sdl_mixer_build copy_flac_files)         # Ready/Copy the Flac library
+add_dependencies(combine_into_singular_static_lib sdl_mixer_build)  # Build sdl_mixer
 add_dependencies(test1 combine_into_singular_static_lib)  # Create the singular lib by combining
 add_dependencies(test2 test1)  # Lastly, finish making the tests
 add_dependencies(test3 test2)

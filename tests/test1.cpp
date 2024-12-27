@@ -4,6 +4,10 @@
 #include "ogg/ogg.h"
 #include "vorbis/codec.h"
 #include "opus/opus.h"
+#include "FLAC/all.h"
+#include "opus/opus_multistream.h"
+#include "opusfile/opusfile.h"
+#include "SDL_mixer/SDL_mixer.h"
 #include "SDL2/SDL.h"
 #include "vpx/vpx_codec.h"
 #include "soloud/soloud.h"
@@ -17,6 +21,11 @@ int main() {
 
     const char* opus_version = opus_get_version_string();
     std::cout << "Linked libopus version:        " << opus_version << std::endl;
+
+    std::cout << "libFLAC version:               " << FLAC__VERSION_STRING << std::endl;
+
+    std::string opusfile_version = "Unknown";
+    std::cout << "Linked libopusfile version:    " << opusfile_version.c_str() << std::endl; // TODO: no straight-forward way to get this information
 
     std::string webm_version = "Unknown";
     std::cout << "Linked libwebm version:        " << webm_version.c_str() << std::endl; // TODO: no straight-forward way to get this information
@@ -40,6 +49,14 @@ int main() {
         << static_cast<int>(compiled.patch) << std::endl;
 
     SDL_Quit();
+
+    // SDL_mixer version
+    SDL_version sdl_mixer_compiled;
+    SDL_MIXER_VERSION(&sdl_mixer_compiled);
+    std::cout << "SDL_mixer compiled version:    "
+              << static_cast<int>(sdl_mixer_compiled.major) << "."
+              << static_cast<int>(sdl_mixer_compiled.minor) << "."
+              << static_cast<int>(sdl_mixer_compiled.patch) << std::endl;
 
     std::string simplewebm_version = "Unknown";
     std::cout << "Linked libsimplewebm version:  " << simplewebm_version.c_str() << std::endl; // TODO: no straight-forward way to get this information

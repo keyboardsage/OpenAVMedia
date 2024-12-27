@@ -102,10 +102,10 @@ sdl2 | [https://github.com/libsdl-org/SDL](https://github.com/libsdl-org/SDL) | 
 soloud | [https://github.com/jarikomppa/soloud](https://github.com/jarikomppa/soloud) | ✅ | 
 libsimplewebm | [https://github.com/zaps166/libsimplewebm](https://github.com/zaps166/libsimplewebm) | ✅ | 
 daala | [https://github.com/xiph/daala](https://github.com/xiph/daala) |  | ✅
-flac | [https://github.com/xiph/flac](https://github.com/xiph/flac) |  | ✅
+flac | [https://github.com/xiph/flac](https://github.com/xiph/flac) | ✅ | 
 xspf | [https://sourceforge.net/projects/libspiff/](https://sourceforge.net/projects/libspiff/) |  | ✅
 qoa | [https://github.com/phoboslab/qoa](https://github.com/phoboslab/qoa) |  | ✅
-
+SDL_mixer | [https://github.com/libsdl-org/SDL_mixer](https://github.com/libsdl-org/SDL_mixer) | ✅ | 
 
 ## Video Licenses
 

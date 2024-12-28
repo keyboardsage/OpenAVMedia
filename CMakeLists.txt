@@ -298,6 +298,9 @@ set(VORBIS_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbis.a")
 set(VORBISENC_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbisenc.a")
 set(VORBISFILE_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbisfile.a")
 
+set(FLAC_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/FLAC")
+set(FLAC_LIBRARY "${CMAKE_BINARY_DIR}/libs/libFLAC.a")
+
 set(sdl_mixer_SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/sdl_mixer-src)
 set(sdl_mixer_BINARY_DIR ${CMAKE_BINARY_DIR}/_deps/sdl_mixer-build)
 
@@ -331,10 +334,12 @@ ExternalProject_Add(sdl_mixer_build
       -DSDL2MIXER_OPUS_SHARED=OFF
       -DSDL2MIXER_MP3=ON
       -DSDL2MIXER_MP3_MINIMP3=ON       # or MPG123 if you prefer
+      -DSDL2MIXER_FLAC=ON
+      -DSDL2MIXER_FLAC_LIBFLAC=ON
+      -DSDL2MIXER_FLAC_LIBFLAC_SHARED=OFF
 
       # and which types are not going to be supported
       -DSDL2MIXER_GME=OFF        # no game-music-emu
-      -DSDL2MIXER_FLAC=OFF       # no FLAC
       -DSDL2MIXER_MOD=OFF        # no MOD music
       -DSDL2MIXER_MIDI=OFF       # no MIDI
       -DSDL2MIXER_WAVPACK=OFF    # no WavPack
@@ -365,6 +370,10 @@ ExternalProject_Add(sdl_mixer_build
       # Force SDL_mixer to pick the local OpusFile
       -DOpusFile_INCLUDE_PATH=${OPUSFILE_INCLUDE_DIR}
       -DOpusFile_LIBRARY=${CMAKE_BINARY_DIR}/libs/libopusfile.a
+
+      # Force SDL_mixer to pick the local FLAC
+      -DFLAC_INCLUDE_DIR=${FLAC_INCLUDE_DIR}
+      -DFLAC_LIBRARY=${FLAC_LIBRARY}
 
       # Make sure we search local paths first
       -DCMAKE_PREFIX_PATH="${CMAKE_BINARY_DIR}/libs" 
@@ -528,3 +537,5 @@ add_dependencies(test3 test2)
 add_dependencies(test4 test3)
 add_dependencies(test5 test4)
 add_dependencies(test6 test5)
+add_dependencies(test7 test6)
+add_dependencies(test8 test7)

@@ -43,6 +43,9 @@ $ ./tests/test4 ../tests/assets/big-buck-bunny_trailer.webm
 
 $ ./tests/test5 ../tests/assets/WING_IT-Blender_Open_Movie-full_movie.webm
 $ ./tests/test6 ../tests/assets/WING_IT-Blender_Open_Movie-full_movie.webm
+
+$ ./tests/test7 (Must be run from inside build/tests/ directory)
+$ ./tests/test8 (Must be run from inside build/tests/ directory)
 ```
 
 The purpose of each example is as follows:  
@@ -54,6 +57,9 @@ The purpose of each example is as follows:
 
 `test5` - Plays a webm video file, statically linked to each library.  
 `test6` - Same as test5 but links only against libopenavmedia.a  
+
+`test7` - Plays a soundscape of a forest using discrete sound assets. It is statically linked to each library.  
+`test8` - Same as test7 but links only against libopenavmedia.a  
 
 # Cleaning
 Go into the build directory and run these commands.

@@ -30,7 +30,7 @@ make
 ```
 The static file for the libraries built will be under `build/libs` and their include files will be under `build/libs/include`. There is also one additional file called `libopenavmedia.a`, this is all the other static libraries combined.
 
-If you are making a release build use `cmake CMAKE_BUILD_TYPE=Release  ..` instead of `cmake ..`.
+If you are making a release build use `cmake CMAKE_BUILD_TYPE=Release  ..` instead of `cmake ..`
 
 # Running
 Go into the build directory and run them like so:

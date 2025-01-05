@@ -539,3 +539,18 @@ add_dependencies(test5 test4)
 add_dependencies(test6 test5)
 add_dependencies(test7 test6)
 add_dependencies(test8 test7)
+
+########################################
+# Interface for OpenAVMedia below.
+########################################
+# Start by creating an interface library.
+add_library(OpenAVMedia INTERFACE)
+
+# Specify include directories (if any)
+target_include_directories(OpenAVMedia INTERFACE
+    ${CMAKE_BINARY_DIR}/libs/include
+    ${CMAKE_BINARY_DIR}/libs/include/SDL2
+)
+
+# Export the target with a namespace
+add_library(OpenAVMedia::OpenAVMedia ALIAS OpenAVMedia)

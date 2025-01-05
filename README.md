@@ -46,8 +46,8 @@ $ ./tests/test4 ../tests/assets/big-buck-bunny_trailer.webm
 $ ./tests/test5 ../tests/assets/WING_IT-Blender_Open_Movie-full_movie.webm
 $ ./tests/test6 ../tests/assets/WING_IT-Blender_Open_Movie-full_movie.webm
 
-$ ./tests/test7 (Must be run from inside build/tests/ directory)
-$ ./tests/test8 (Must be run from inside build/tests/ directory)
+$ ./test7 (Must be run from inside build/tests/ directory)
+$ ./test8 (Must be run from inside build/tests/ directory)
 ```
 
 The purpose of each example is as follows:  

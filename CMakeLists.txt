@@ -543,8 +543,20 @@ add_dependencies(test8 test7)
 ########################################
 # Interface for OpenAVMedia below.
 ########################################
+
+# "openavmedia_full_build" Aggregator
+add_custom_target(openavmedia_full_build ALL
+    COMMENT "Aggregates all external project build steps in OpenAVMedia"
+)
+add_dependencies(openavmedia_full_build
+    combine_into_singular_static_lib
+)
+
 # Start by creating an interface library.
 add_library(OpenAVMedia INTERFACE)
+
+# Force the "openavmedia_full_build" aggregator to build first whenever something links to OpenAVMedia
+add_dependencies(OpenAVMedia openavmedia_full_build)
 
 # Specify include directories (if any)
 target_include_directories(OpenAVMedia INTERFACE

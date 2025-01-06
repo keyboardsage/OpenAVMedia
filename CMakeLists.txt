@@ -8,14 +8,14 @@ include(ExternalProject) # Will be using this functionality to customize externa
 
 # A target dedicated to setting up directories
 add_custom_target(setup_final_destination
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs/include
     COMMENT "Creating libs and include directories inside build..."
 )
 
 # A target dedicated to cleaning up
 add_custom_target(clean-libs
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/libs
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/libs
     COMMENT "Cleaning build artifacts..."
 )
 
@@ -29,7 +29,7 @@ CPMAddPackage(
     GIT_SHALLOW TRUE
 )
 
-set(Ogg_DIR ${CMAKE_BINARY_DIR}/_deps/ogg-build CACHE PATH "Path to the Ogg library's CMake configuration")
+set(Ogg_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps/ogg-build CACHE PATH "Path to the Ogg library's CMake configuration")
 CPMAddPackage(
   NAME Vorbis
   VERSION 1.3.7
@@ -45,7 +45,7 @@ CPMAddPackage(
 )
 
 # Compiles SDL2
-set(sdl2_SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/sdl2-src/ CACHE PATH "Path to the SDL2 library's CMake configuration")
+set(sdl2_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps/sdl2-src/ CACHE PATH "Path to the SDL2 library's CMake configuration")
 CPMAddPackage(
   NAME SDL2
   GITHUB_REPOSITORY libsdl-org/SDL
@@ -62,19 +62,19 @@ ExternalProject_Add(sdl2_build
     INSTALL_COMMAND ""
 )
 ExternalProject_Add_Step(sdl2_build copy_sdl2_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/SDL2"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/SDL2"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/SDL2"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/sdl2-src/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/SDL2"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/build/libSDL2.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/sdl2-src/build/libSDL2.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/build/libSDL2main.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/sdl2-src/build/libSDL2main.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/sdl2-src/build/libSDL2_test.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/sdl2-src/build/libSDL2_test.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     DEPENDS setup_final_destination
     COMMENT "Copying SDL2 files and directories..."
     DEPENDEES build
@@ -91,7 +91,7 @@ CPMAddPackage(
 )
 include(ExternalProject)
 if(NOT webm_SOURCE_DIR)
-  set(webm_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/webm-src")
+  set(webm_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/webm-src")
 endif()
 ExternalProject_Add(webm_build
     SOURCE_DIR ${webm_SOURCE_DIR}
@@ -101,38 +101,38 @@ ExternalProject_Add(webm_build
     INSTALL_COMMAND ""
 )
 ExternalProject_Add_Step(webm_build copy_CMakeLists_patch
-    COMMAND /bin/sh -c "${CMAKE_CURRENT_SOURCE_DIR}/patch/modify_mkvparser.sh '${CMAKE_BINARY_DIR}'"
+    COMMAND /bin/sh -c "${CMAKE_CURRENT_SOURCE_DIR}/patch/modify_mkvparser.sh '${CMAKE_CURRENT_BINARY_DIR}'"
     COMMENT "Modifying Mkvparser header in webm..."
     DEPENDEES download
     DEPENDERS configure
     ALWAYS TRUE
 )
 ExternalProject_Add_Step(webm_build copy_compiled_webm_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/webm/common/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/mkvmuxer/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/mkvparser/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/common/"
 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvmuxer/"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/webm-src/mkvmuxer/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/mkvmuxer"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/webm-src/mkvparser/"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/webm-src/mkvparser/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/mkvparser"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/webm-src/common/"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/common"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/webm-src/common/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/common"
 
     COMMAND ${CMAKE_COMMAND} -E remove
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvmuxer/*.cc"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/mkvparser/*.cc"
-        "${CMAKE_BINARY_DIR}/libs/include/webm/common/*.cc"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/mkvmuxer/*.cc"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/mkvparser/*.cc"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/common/*.cc"
     COMMAND ${CMAKE_COMMAND} -E remove
-        "${CMAKE_BINARY_DIR}/libs/include/webm/common/common.sh"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/webm/common/common.sh"
     
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/webm-src/build/libwebm.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/webm-src/build/libwebm.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMENT "Copying webm files and directories..."
     DEPENDEES build
     DEPENDERS install
@@ -174,8 +174,8 @@ ExternalProject_Add(libsimplewebm_build
 )
 ExternalProject_Add_Step(libsimplewebm_build copy_CMakeLists_patch
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/../patch/CMakeLists.txt"
-        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/"
+        "${CMAKE_CURRENT_BINARY_DIR}/../patch/CMakeLists.txt"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/libsimplewebm-src/"
     COMMENT "Copying over custom CMakeLists.txt..."
     DEPENDEES download
     DEPENDERS configure
@@ -183,26 +183,26 @@ ExternalProject_Add_Step(libsimplewebm_build copy_CMakeLists_patch
 )
 ExternalProject_Add_Step(libsimplewebm_build remove_outdated_libwebm_patch
     COMMAND ${CMAKE_COMMAND} -E remove_directory
-        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/"
-    COMMENT "Removing the outdated libwebm: ${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/..."
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/"
+    COMMENT "Removing the outdated libwebm: ${CMAKE_CURRENT_BINARY_DIR}/_deps/libsimplewebm-src/libwebm/..."
     DEPENDEES download
     DEPENDERS configure
     ALWAYS TRUE
 )
 ExternalProject_Add_Step(libsimplewebm_build copy_simplewebm_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/simplewebm
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs/include/simplewebm
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/build/libsimplewebm.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/libsimplewebm-src/build/libsimplewebm.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/OpusVorbisDecoder.hpp"
-        "${CMAKE_BINARY_DIR}/libs/include/simplewebm/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/libsimplewebm-src/OpusVorbisDecoder.hpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/simplewebm/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/VPXDecoder.hpp"
-        "${CMAKE_BINARY_DIR}/libs/include/simplewebm/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/libsimplewebm-src/VPXDecoder.hpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/simplewebm/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/libsimplewebm-src/WebMDemuxer.hpp"
-        "${CMAKE_BINARY_DIR}/libs/include/simplewebm/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/libsimplewebm-src/WebMDemuxer.hpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/simplewebm/"
     COMMENT "Copying simplewebm files and directories..."
     DEPENDEES build
     DEPENDERS install
@@ -225,20 +225,20 @@ ExternalProject_Add(soloud_build
     DEPENDS sdl2_build
 )
 ExternalProject_Add_Step(soloud_build run_soloud_patch
-    COMMAND /bin/sh -c "${CMAKE_CURRENT_SOURCE_DIR}/patch/modify_soloud_cmake.sh '${CMAKE_BINARY_DIR}'"
+    COMMAND /bin/sh -c "${CMAKE_CURRENT_SOURCE_DIR}/patch/modify_soloud_cmake.sh '${CMAKE_CURRENT_BINARY_DIR}'"
     COMMENT "Modifying SoLoud CMakeLists.txt to rely on the statically built SDL2 library..."
     DEPENDEES download
     DEPENDERS configure
     ALWAYS TRUE
 )
 ExternalProject_Add_Step(soloud_build copy_compiled_soloud_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/soloud/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/soloud/"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/soloud-src/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/soloud"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/soloud-src/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/soloud"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/build/libsoloud.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/soloud-src/contrib/build/libsoloud.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMENT "Copying SoLoud files and directories..."
     DEPENDEES build
     DEPENDERS install
@@ -280,29 +280,29 @@ CPMAddPackage(
 )
 
 # Compile SDL_mixer with the local SDL2, Opus, Ogg, and Vorbis libraries
-set(SDL2_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/SDL2")
-set(SDL2_LIBRARY "${CMAKE_BINARY_DIR}/libs/libSDL2.a")
-set(SDL2MAIN_LIBRARY "${CMAKE_BINARY_DIR}/libs/libSDL2main.a")
+set(SDL2_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/include/SDL2")
+set(SDL2_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libSDL2.a")
+set(SDL2MAIN_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libSDL2main.a")
 
-set(OPUS_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/opus")
-set(OPUS_LIBRARY "${CMAKE_BINARY_DIR}/libs/libopus.a")
+set(OPUS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/include/opus")
+set(OPUS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libopus.a")
 
-set(OPUSFILE_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/opusfile")
-set(OPUSFILE_LIBRARY "${CMAKE_BINARY_DIR}/libs/libopusfile.a")
+set(OPUSFILE_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/include/opusfile")
+set(OPUSFILE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libopusfile.a")
 
-set(OGG_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/ogg")
-set(OGG_LIBRARY "${CMAKE_BINARY_DIR}/libs/libogg.a")
+set(OGG_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/include/ogg")
+set(OGG_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libogg.a")
 
-set(VORBIS_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/vorbis")
-set(VORBIS_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbis.a")
-set(VORBISENC_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbisenc.a")
-set(VORBISFILE_LIBRARY "${CMAKE_BINARY_DIR}/libs/libvorbisfile.a")
+set(VORBIS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/include/vorbis")
+set(VORBIS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libvorbis.a")
+set(VORBISENC_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libvorbisenc.a")
+set(VORBISFILE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libvorbisfile.a")
 
-set(FLAC_INCLUDE_DIR "${CMAKE_BINARY_DIR}/libs/include/FLAC")
-set(FLAC_LIBRARY "${CMAKE_BINARY_DIR}/libs/libFLAC.a")
+set(FLAC_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/include/FLAC")
+set(FLAC_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libs/libFLAC.a")
 
-set(sdl_mixer_SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/sdl_mixer-src)
-set(sdl_mixer_BINARY_DIR ${CMAKE_BINARY_DIR}/_deps/sdl_mixer-build)
+set(sdl_mixer_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps/sdl_mixer-src)
+set(sdl_mixer_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps/sdl_mixer-build)
 
 ExternalProject_Add(sdl_mixer_build
     SOURCE_DIR        "${sdl_mixer_SOURCE_DIR}"
@@ -352,37 +352,37 @@ ExternalProject_Add(sdl_mixer_build
 
       # Force SDL_mixer to pick the local Ogg
       -DOGG_INCLUDE_DIR="${OGG_INCLUDE_DIR}"         # Path to ... /libs/include/ogg
-      -DOGG_LIBRARY="${CMAKE_BINARY_DIR}/libs/libogg.a"
+      -DOGG_LIBRARY="${CMAKE_CURRENT_BINARY_DIR}/libs/libogg.a"
 
       # Force SDL_mixer to pick the local Vorbis
       -DVORBIS_INCLUDE_DIR="${VORBIS_INCLUDE_DIR}"   # Path to ... /libs/include/vorbis
-      -DVORBIS_LIBRARY="${CMAKE_BINARY_DIR}/libs/libvorbis.a"
-      -DVORBISENC_LIBRARY="${CMAKE_BINARY_DIR}/libs/libvorbisenc.a"
-      -DVORBISFILE_LIBRARY="${CMAKE_BINARY_DIR}/libs/libvorbisfile.a"
+      -DVORBIS_LIBRARY="${CMAKE_CURRENT_BINARY_DIR}/libs/libvorbis.a"
+      -DVORBISENC_LIBRARY="${CMAKE_CURRENT_BINARY_DIR}/libs/libvorbisenc.a"
+      -DVORBISFILE_LIBRARY="${CMAKE_CURRENT_BINARY_DIR}/libs/libvorbisfile.a"
 
       # Correctly point to the directory containing opus/opusfile.h
-      -DCMAKE_C_FLAGS="-I${CMAKE_BINARY_DIR}/libs/include/opus"
+      -DCMAKE_C_FLAGS="-I${CMAKE_CURRENT_BINARY_DIR}/libs/include/opus"
 
       # Force SDL_mixer to pick the local Opus
       -DOPUS_INCLUDE_DIR="${OPUS_INCLUDE_DIR}"       # Path to ... /libs/include/opus
-      -DOPUS_LIBRARY="${CMAKE_BINARY_DIR}/libs/libopus.a"
+      -DOPUS_LIBRARY="${CMAKE_CURRENT_BINARY_DIR}/libs/libopus.a"
 
       # Force SDL_mixer to pick the local OpusFile
       -DOpusFile_INCLUDE_PATH=${OPUSFILE_INCLUDE_DIR}
-      -DOpusFile_LIBRARY=${CMAKE_BINARY_DIR}/libs/libopusfile.a
+      -DOpusFile_LIBRARY=${CMAKE_CURRENT_BINARY_DIR}/libs/libopusfile.a
 
       # Force SDL_mixer to pick the local FLAC
       -DFLAC_INCLUDE_DIR=${FLAC_INCLUDE_DIR}
       -DFLAC_LIBRARY=${FLAC_LIBRARY}
 
       # Make sure we search local paths first
-      -DCMAKE_PREFIX_PATH="${CMAKE_BINARY_DIR}/libs" 
-      -DCMAKE_LIBRARY_PATH="${CMAKE_BINARY_DIR}/libs"
-      -DCMAKE_INCLUDE_PATH="${CMAKE_BINARY_DIR}/libs/include"
+      -DCMAKE_PREFIX_PATH="${CMAKE_CURRENT_BINARY_DIR}/libs" 
+      -DCMAKE_LIBRARY_PATH="${CMAKE_CURRENT_BINARY_DIR}/libs"
+      -DCMAKE_INCLUDE_PATH="${CMAKE_CURRENT_BINARY_DIR}/libs/include"
 
       # Provide an install prefix (even if SDL2MIXER_INSTALL=OFF)
       -DSDL2MIXER_INSTALL=OFF           # We are not going to "make install" SDL_mixer, so turned it off
-      -DCMAKE_INSTALL_PREFIX="${CMAKE_BINARY_DIR}/libs"
+      -DCMAKE_INSTALL_PREFIX="${CMAKE_CURRENT_BINARY_DIR}/libs"
     # -------------------------------------------------------------------
 
     BUILD_COMMAND    ${CMAKE_COMMAND} --build ${sdl_mixer_BINARY_DIR} --target SDL2_mixer
@@ -392,13 +392,13 @@ ExternalProject_Add(sdl_mixer_build
 )
 
 ExternalProject_Add_Step(sdl_mixer_build copy_sdl_mixer_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/SDL_mixer/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/SDL_mixer/"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${sdl_mixer_SOURCE_DIR}/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/SDL_mixer/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/SDL_mixer/"
     COMMAND ${CMAKE_COMMAND} -E copy
         "${sdl_mixer_BINARY_DIR}/libSDL2_mixer.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMENT "Copying SDL_mixer files and directories..."
     DEPENDEES build
     DEPENDERS install
@@ -407,17 +407,17 @@ ExternalProject_Add_Step(sdl_mixer_build copy_sdl_mixer_files
 
 # Copy ogg files/directories to their final build location under build/libs/
 add_custom_target(copy_ogg_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs/include
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/ogg-build/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/ogg-build/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/ogg-src/include/ogg/ogg.h"
-        "${CMAKE_BINARY_DIR}/libs/include/ogg/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/ogg-src/include/ogg/ogg.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/ogg/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/ogg-build/libogg.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/ogg-build/libogg.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     DEPENDS setup_final_destination
     COMMENT "Copying ogg files and directories..."
 )
@@ -425,83 +425,83 @@ add_custom_target(copy_ogg_files
 # Copy vorbis files/directories to their final build location under build/libs/
 add_custom_target(copy_vorbis_files
     # Make sure that vorbisenc and vorbisfile are made also
-    COMMAND make -C "${CMAKE_BINARY_DIR}/_deps/vorbis-build"
+    COMMAND make -C "${CMAKE_CURRENT_BINARY_DIR}/_deps/vorbis-build"
 
     # Now copy the files
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/vorbis-src/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/vorbis-src/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/"
     COMMAND ${CMAKE_COMMAND} -E remove
-        "${CMAKE_BINARY_DIR}/libs/include/Makefile.am"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/Makefile.am"
     COMMAND ${CMAKE_COMMAND} -E remove
-        "${CMAKE_BINARY_DIR}/libs/include/vorbis/Makefile.am"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/vorbis/Makefile.am"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbis.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/vorbis-build/lib/libvorbis.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisenc.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisenc.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisfile.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/vorbis-build/lib/libvorbisfile.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     DEPENDS copy_ogg_files
     COMMENT "Building libvorbisenc.a and libvorbisfile.a then copying vorbis files and directories..."
 )
 
 # Copy opus files/directories to their final build location under build/libs/
 add_custom_target(copy_opus_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/libs/include/opus/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/libs/include/opus/"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/opus-src/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/opus/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/opus-src/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/opus/"
     COMMAND ${CMAKE_COMMAND} -E remove
-        "${CMAKE_BINARY_DIR}/libs/include/opus/meson.build"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/opus/meson.build"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/opus-build/libopus.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/opus-build/libopus.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     COMMENT "Copying opus files and directories..."
 )
 
 # Copy vpx files/directories to their final build location under build/libs/
 add_custom_target(copy_vpx_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/vpx
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs/include/vpx
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/vpx-src/vpx/"
-        "${CMAKE_BINARY_DIR}/libs/include/vpx"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/vpx-src/vpx/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/vpx"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/vpx-src/libvpx.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/vpx-src/libvpx.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     DEPENDS setup_final_destination
     COMMENT "Copying vpx files and directories..."
 )
 
 # Copy flac files/directories to their final build location under build/libs/
 add_custom_target(copy_flac_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/FLAC
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs/include/FLAC
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/flac-src/include/FLAC/"
-        "${CMAKE_BINARY_DIR}/libs/include/FLAC"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/flac-src/include/FLAC/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/FLAC"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/flac-build/src/libFLAC/libFLAC.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/flac-build/src/libFLAC/libFLAC.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     DEPENDS setup_final_destination
     COMMENT "Copying flac files and directories..."
 )
 
 # Copy opusfile files/directories to their final build location under build/libs/
 add_custom_target(copy_opusfile_files
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/opusfile
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs/include/opusfile
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/opusfile-src/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/opusfile"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/opusfile-src/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/opusfile"
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/_deps/opusfile-build/libopusfile.a"
-        "${CMAKE_BINARY_DIR}/libs/"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/opusfile-build/libopusfile.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/"
     
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/libs/include/opus/opus
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/libs/include/opus/opus
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_BINARY_DIR}/_deps/opusfile-src/include/"
-        "${CMAKE_BINARY_DIR}/libs/include/opus/opus"
+        "${CMAKE_CURRENT_BINARY_DIR}/_deps/opusfile-src/include/"
+        "${CMAKE_CURRENT_BINARY_DIR}/libs/include/opus/opus"
 
     DEPENDS setup_final_destination
     COMMENT "Copying opusfile files and directories..."
@@ -560,8 +560,8 @@ add_dependencies(OpenAVMedia openavmedia_full_build)
 
 # Specify include directories (if any)
 target_include_directories(OpenAVMedia INTERFACE
-    ${CMAKE_BINARY_DIR}/libs/include
-    ${CMAKE_BINARY_DIR}/libs/include/SDL2
+    ${CMAKE_CURRENT_BINARY_DIR}/libs/include
+    ${CMAKE_CURRENT_BINARY_DIR}/libs/include/SDL2
 )
 
 # Export the target with a namespace

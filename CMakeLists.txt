@@ -101,7 +101,7 @@ ExternalProject_Add(webm_build
     INSTALL_COMMAND ""
 )
 ExternalProject_Add_Step(webm_build copy_CMakeLists_patch
-    COMMAND /bin/sh -c "${CMAKE_SOURCE_DIR}/patch/modify_mkvparser.sh '${CMAKE_BINARY_DIR}'"
+    COMMAND /bin/sh -c "${CMAKE_CURRENT_SOURCE_DIR}/patch/modify_mkvparser.sh '${CMAKE_BINARY_DIR}'"
     COMMENT "Modifying Mkvparser header in webm..."
     DEPENDEES download
     DEPENDERS configure
@@ -225,7 +225,7 @@ ExternalProject_Add(soloud_build
     DEPENDS sdl2_build
 )
 ExternalProject_Add_Step(soloud_build run_soloud_patch
-    COMMAND /bin/sh -c "${CMAKE_SOURCE_DIR}/patch/modify_soloud_cmake.sh '${CMAKE_BINARY_DIR}'"
+    COMMAND /bin/sh -c "${CMAKE_CURRENT_SOURCE_DIR}/patch/modify_soloud_cmake.sh '${CMAKE_BINARY_DIR}'"
     COMMENT "Modifying SoLoud CMakeLists.txt to rely on the statically built SDL2 library..."
     DEPENDEES download
     DEPENDERS configure
@@ -509,7 +509,7 @@ add_custom_target(copy_opusfile_files
 
 # Combines the multiple libraries and places them into a singular libopenavmedia.a
 add_custom_target(combine_into_singular_static_lib
-    COMMAND /bin/sh -c "${CMAKE_SOURCE_DIR}/patch/combine_static_libs.sh"
+    COMMAND /bin/sh -c "${CMAKE_CURRENT_SOURCE_DIR}/patch/combine_static_libs.sh"
     COMMENT "Combining all the static libraries into libopenavmedia.a..."
 )
 

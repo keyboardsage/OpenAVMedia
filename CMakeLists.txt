@@ -50,8 +50,6 @@ CPMAddPackage(
   NAME SDL2
   GITHUB_REPOSITORY libsdl-org/SDL
   GIT_TAG release-2.30.0
-#  OPTIONS
-#    "SDL_STATIC ON" "SDL_SHARED OFF"
   DOWNLOAD_ONLY True
 )
 ExternalProject_Add(sdl2_build
@@ -514,6 +512,7 @@ add_custom_target(combine_into_singular_static_lib
 )
 
 # Compile the libraries
+set(OPENAVMEDIA_LIBS_DIR ${CMAKE_CURRENT_BINARY_DIR}/libs) # The "tests/CMakeLists.txt" will use this variable
 add_subdirectory("./tests")
 
 add_dependencies(opus vorbis)                 # Build vorbis first, it depends upon Ogg, kicks off Ogg build

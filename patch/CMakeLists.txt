@@ -18,20 +18,24 @@ add_library(simplewebm STATIC
     OpusVorbisDecoder.cpp
 )
 
+# FYI
+message(STATUS "libsimplewebm CMAKE_CURRENT_SOURCE_DIR directory: ${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "libsimplewebm CMAKE_CURRENT_BINARY_DIR directory: ${CMAKE_CURRENT_BINARY_DIR}")
+
 # Include directories
 target_include_directories(simplewebm PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_BINARY_DIR}/../../../libs/include/webm
-    ${CMAKE_BINARY_DIR}/../../../libs/include
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/include/webm
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/include
 )
 
 # Link against archive libraries
 target_link_libraries(simplewebm PUBLIC
-    ${CMAKE_BINARY_DIR}/../../../libs/libvpx.a
-    ${CMAKE_BINARY_DIR}/../../../libs/libwebm.a
-    ${CMAKE_BINARY_DIR}/../../../libs/libopus.a
-    ${CMAKE_BINARY_DIR}/../../../libs/libvorbis.a
-    ${CMAKE_BINARY_DIR}/../../../libs/libogg.a
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/libvpx.a
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/libwebm.a
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/libopus.a
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/libvorbis.a
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/libogg.a
     "${PTHREAD_LIB}"
 )
 
@@ -41,8 +45,8 @@ add_executable(simplewebm_example example.cpp WebMDemuxer.cpp VPXDecoder.cpp Opu
 # Include directories
 target_include_directories(simplewebm_example PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_BINARY_DIR}/../../../libs/include/webm
-    ${CMAKE_BINARY_DIR}/../../../libs/include
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/include/webm
+    ${CMAKE_CURRENT_BINARY_DIR}/../../libs/include
 )
 
 # Link the executable against the static library

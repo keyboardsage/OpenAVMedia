@@ -96,7 +96,7 @@ void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
 }
 
 // MAIN
-int main(int argc, char *argv[]) {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
     // sanity check
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <file_path>.webm" << std::endl;

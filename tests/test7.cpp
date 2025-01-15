@@ -112,7 +112,7 @@ std::string chooseAudioDevice() {
     return SDL_GetAudioDeviceName(choice, 0);
 }
 
-int main(int argc, char* argv[]) {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
     // init SDL
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         std::cerr << "SDL could not initialize: " << SDL_GetError() << std::endl;

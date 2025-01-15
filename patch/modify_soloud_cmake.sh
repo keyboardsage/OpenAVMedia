@@ -27,5 +27,3 @@ sed -e "s|find_package (SDL2 REQUIRED)|find_package (SDL2 REQUIRED HINTS ${CMAKE
 mv "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/src_modified.cmake" "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/src.cmake"
 sed -e "s|include_directories (\${SDL2_INCLUDE_DIR})|include_directories (${CMAKE_BINARY_DIR}/libs/include/SDL2/)\n\tmessage(STATUS \"SoLoud SDL2 Include directory is: ${CMAKE_BINARY_DIR}/libs/include/SDL2/\")|g" "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/src.cmake" > "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/src_modified.cmake"
 mv "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/src_modified.cmake" "${CMAKE_BINARY_DIR}/_deps/soloud-src/contrib/src.cmake"
-#sed -e '/#include "SDL_config.h"/s/^/\/\//' "${CMAKE_BINARY_DIR}/_deps/soloud-src/src/backend/sdl2_static/soloud_sdl2_static.cpp" > "${CMAKE_BINARY_DIR}/_deps/soloud-src/src/backend/sdl2_static/soloud_sdl2_static_modified.cpp"
-#mv "${CMAKE_BINARY_DIR}/_deps/soloud-src/src/backend/sdl2_static/soloud_sdl2_static_modified.cpp" "${CMAKE_BINARY_DIR}/_deps/soloud-src/src/backend/sdl2_static/soloud_sdl2_static.cpp"

@@ -12,7 +12,7 @@
 #include "vpx/vpx_codec.h"
 #include "soloud/soloud.h"
 
-int main() {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
     const char* ogg_version = ogg_version_string();
     std::cout << "Linked libogg version:         " << ogg_version << std::endl;
 

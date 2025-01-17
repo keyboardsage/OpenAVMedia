@@ -279,7 +279,7 @@ class FrameRegulator {
     std::chrono::_V2::steady_clock::time_point m_frameStart; // start time of the frame
     std::chrono::milliseconds::rep m_frameTime;              // elapsed time between the start() and stop(), the frame processing time
     int m_targetFPS;                // target number of frames-per-second
-    uint64_t m_targetFrameDuration; // duration in milliseconds
+    int64_t m_targetFrameDuration; // duration in milliseconds
 };
 
 /**
@@ -385,7 +385,6 @@ int main(int argc, char* argv[]) {
                 for (int p = 0; p < 3; ++p) {
                     // ...determine the dimensions
                     // Note: This can be necessary because for some formats, e.g., YUV, the format contains planes with differing dimensions.
-                    const int w = image.getWidth(p);
                     const int h = image.getHeight(p);
 
                     // ...then copy each row of the current plane from the decoder's color plane to the Image's color plane

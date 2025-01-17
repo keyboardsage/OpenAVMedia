@@ -75,7 +75,7 @@ static Uint8 *audio_playback_pos;  // audio position as a pointer, it points to 
 static Uint64 audio_remaining_len; // remaining length, in bytes, of the audio we have to play
 
 // CALLBACK
-void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
+void SDLCALL audio_callback([[maybe_unused]] void *userdata, Uint8 *stream, int len) {
     //DEBUG:
     //static int callbackCount = 0;
     //std::cout << "Callback #" << ++callbackCount << " - Requested Length: " << len << std::endl;
@@ -85,7 +85,7 @@ void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
         return;
     }
 
-    len = (len > audio_remaining_len) ? audio_remaining_len : len;
+    len = (static_cast<Uint64>(len) > audio_remaining_len) ? audio_remaining_len : len;
 
     SDL_memcpy(stream, audio_playback_pos, len); // copy audio data
     
